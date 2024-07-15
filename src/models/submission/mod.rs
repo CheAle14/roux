@@ -1,4 +1,6 @@
 //! # Subreddit Submission Responses
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -102,6 +104,10 @@ pub struct SubmissionData {
     // TODO: skipped from
     /// This is `true` if this is a self post.
     pub is_self: bool,
+
+    /// This is `true` if this is a gallery post.
+    #[serde(default)]
+    pub is_gallery: bool,
     // TODO: skipped from_id
     /// The permanent, long link for this submission.
     pub permalink: String,
@@ -137,6 +143,10 @@ pub struct SubmissionData {
     pub visited: bool,
     /// The number of reports, if the user is a moderator of this subreddit.
     pub num_reports: Option<u64>,
+    /// The gallery data for this submission, if it is a gallery post.
+    pub gallery_data: Option<SubmissionDataGalleryData>,
+    /// The media metadata, used by the gallery if it is present.
+    pub media_metadata: Option<HashMap<String, SubmissionDataMediaMetadata>>,
 }
 
 /// SubmissionDataPreview
@@ -169,6 +179,48 @@ pub struct SubmissionDataPreviewImageSource {
     pub width: u64,
     /// Height
     pub height: u64,
+}
+
+/// Submission gallery data
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SubmissionDataGalleryData {
+    /// The gallery items
+    pub items: Vec<SubmissionDataGalleryItem>,
+}
+
+/// Submission gallery item
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SubmissionDataGalleryItem {
+    /// Gallery caption
+    pub caption: Option<String>,
+    /// Id of this item
+    pub id: f64,
+    /// Media metadata ID, should be present in submission `media_metadata`
+    pub media_id: String,
+}
+
+/// Submission media metadata
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SubmissionDataMediaMetadata {
+    /// The ID for this media metadata.
+    pub id: String,
+    /// The media type, e.g. `image/png`
+    pub m: String,
+    /// The metadata type, e.g. `Image`
+    pub e: String,
+    /// The media value
+    pub s: SubmissionDataMediaMetadataValue,
+}
+
+/// Submission media metadata values
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SubmissionDataMediaMetadataValue {
+    /// Media URL
+    pub u: String,
+    /// Media width
+    pub x: u64,
+    /// Media height
+    pub y: u64,
 }
 
 /// Submissions
