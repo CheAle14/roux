@@ -260,6 +260,13 @@ impl Me {
         Ok(self.get(&url).await?.json::<Submissions>().await?)
     }
 
+    /// Report
+    #[maybe_async::maybe_async]
+    pub async fn report(&self, id: &str, reason: &str) -> Result<Response, RouxError> {
+        let form = [("id", id), ("reason", reason)];
+        self.post("api/report", &form).await
+    }
+
     /// Logout
     #[maybe_async::maybe_async]
     pub async fn logout(self) -> Result<(), RouxError> {
