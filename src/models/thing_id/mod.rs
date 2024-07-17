@@ -72,36 +72,12 @@ impl ThingId {
     }
 }
 
-struct ThingIdVisitor;
-
-impl<'de> Visitor<'de> for ThingIdVisitor {
-    type Value = ThingId;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(formatter, "a string in the format `t1_1e5leyy`")
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        ThingId::try_from(v).map_err(|()| E::custom("invalid thing id"))
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: Error,
-    {
-        ThingId::try_from(v).map_err(|()| E::custom("invalid thing id"))
-    }
-}
-
 impl<'de> Deserialize<'de> for ThingId {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        let visitor = ThingIdVisitor;
-        deserializer.deserialize_string(visitor)
+        let s = String::deserialize(deserializer)?;
+        ThingId::try_from(s).map_err(|()| D::Error::custom("invalid thing id"))
     }
 }
