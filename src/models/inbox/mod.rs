@@ -1,7 +1,7 @@
 //! # Inbox Responses
 use serde::Deserialize;
 
-use crate::models::response::BasicListing;
+use crate::{models::response::BasicListing, ThingId};
 
 /// InboxItem
 #[derive(Debug, Deserialize)]
@@ -15,7 +15,7 @@ pub struct InboxData {
     /// Author
     pub author: Option<String>,
     /// Parent ID
-    pub parent_id: Option<String>,
+    pub parent_id: Option<ThingId>,
     /// Sub name
     pub subreddit_name_prefixed: Option<String>,
     /// New
@@ -29,7 +29,7 @@ pub struct InboxData {
     /// Body HTML
     pub body_html: String,
     /// Name
-    pub name: String,
+    pub name: ThingId,
     /// Created
     pub created: f64,
     /// Created (UTC)

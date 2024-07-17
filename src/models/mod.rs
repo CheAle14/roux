@@ -10,6 +10,7 @@ pub mod response;
 pub mod saved;
 pub mod submission;
 pub mod subreddit;
+pub mod thing_id;
 pub mod user;
 
 pub use about::About;
@@ -23,4 +24,5 @@ pub use reply::{MaybeReplies, Replies};
 pub use saved::Saved;
 pub use submission::Submissions;
 pub use subreddit::{Subreddit, Subreddits};
+pub use thing_id::ThingId;
 pub use user::User;

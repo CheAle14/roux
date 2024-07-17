@@ -1,7 +1,10 @@
 //! # Subreddit Comment Responses
 use serde::{Deserialize, Serialize};
 
-use crate::models::{reply::MaybeReplies, response::BasicListing};
+use crate::{
+    models::{reply::MaybeReplies, response::BasicListing},
+    ThingId,
+};
 
 /// SubredditCommentsData
 /// Everything is an option to deal with both `latest_comments` and `article_comments`
@@ -12,7 +15,7 @@ pub struct CommentData {
     /// Approved at (UTC)
     pub approved_at_utc: Option<f64>,
     /// Link id
-    pub link_id: Option<String>,
+    pub link_id: Option<ThingId>,
     /// What is this
     pub author_flair_template_id: Option<String>,
     /// Likes
@@ -36,23 +39,23 @@ pub struct CommentData {
     /// Send replies
     pub send_replies: Option<bool>,
     /// Parent ID
-    pub parent_id: Option<String>,
+    pub parent_id: Option<ThingId>,
     /// Score
     pub score: Option<i32>,
     /// Author fullname
-    pub author_fullname: Option<String>,
+    pub author_fullname: Option<ThingId>,
     /// Over 18
     pub over_18: Option<bool>,
     /// Approved by
     pub approved_by: Option<String>,
     /// Subreddit ID
-    pub subreddit_id: Option<String>,
+    pub subreddit_id: Option<ThingId>,
     /// Body
     pub body: Option<String>,
     /// Link title
     pub link_title: Option<String>,
     /// Name
-    pub name: Option<String>,
+    pub name: Option<ThingId>,
     /// Patreon flair
     pub author_patreon_flair: Option<bool>,
     /// Downs?

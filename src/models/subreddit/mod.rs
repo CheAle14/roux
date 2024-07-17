@@ -73,6 +73,7 @@ use crate::util::defaults::default_client;
 use crate::util::{FeedOption, RouxError};
 
 use crate::models::{Comments, Moderators, Submissions};
+use crate::ThingId;
 
 /// Access subreddits API
 pub struct Subreddits;
@@ -209,6 +210,8 @@ impl Subreddit {
             url.push_str(&format!("&limit={}", limit));
         }
 
+        println!("Fetching comments from {url:?}");
+
         // This is one of the dumbest APIs I've ever seen.
         // The comments for a subreddit are stored in a normal hash map
         // but for posts the comments are in an array with the ONLY item
@@ -288,11 +291,11 @@ impl Subreddit {
     #[maybe_async::maybe_async]
     pub async fn article_comments(
         &self,
-        article: &str,
+        article: &ThingId,
         depth: Option<u32>,
         limit: Option<u32>,
     ) -> Result<Comments, RouxError> {
-        self.get_comment_feed(&format!("comments/{}", article), depth, limit)
+        self.get_comment_feed(&format!("comments/{}", article.id()), depth, limit)
             .await
     }
 }
@@ -320,7 +323,15 @@ mod tests {
         let latest_comments = subreddit.latest_comments(None, Some(25)).await;
         assert!(latest_comments.is_ok());
 
-        let article_id = &hot.unwrap().data.children.first().unwrap().data.id.clone();
+        let article_id = &hot
+            .unwrap()
+            .data
+            .children
+            .first()
+            .unwrap()
+            .data
+            .name
+            .clone();
         let article_comments = subreddit.article_comments(article_id, None, Some(25)).await;
         assert!(article_comments.is_ok());
 

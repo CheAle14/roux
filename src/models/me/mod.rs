@@ -12,7 +12,7 @@ use crate::config::Config;
 use crate::models::me::response::MeData;
 use crate::models::{Friend, Inbox, Saved};
 use crate::util::{url, FeedOption, RouxError};
-use crate::Submissions;
+use crate::{Submissions, ThingId};
 
 /// Me
 #[derive(Debug, Clone)]
@@ -226,8 +226,8 @@ impl Me {
 
     /// Mark messages as read
     #[maybe_async::maybe_async]
-    pub async fn mark_read(&self, ids: &str) -> Result<Response, RouxError> {
-        let form = [("id", ids)];
+    pub async fn mark_read(&self, ids: &ThingId) -> Result<Response, RouxError> {
+        let form = [("id", ids.full())];
         self.post("api/read_message", &form).await
     }
 
@@ -240,15 +240,15 @@ impl Me {
 
     /// Comment
     #[maybe_async::maybe_async]
-    pub async fn comment(&self, text: &str, parent: &str) -> Result<Response, RouxError> {
-        let form = [("text", text), ("parent", parent)];
+    pub async fn comment(&self, text: &str, parent: &ThingId) -> Result<Response, RouxError> {
+        let form = [("text", text), ("parent", parent.full())];
         self.post("api/comment", &form).await
     }
 
     /// Edit a 'thing'
     #[maybe_async::maybe_async]
-    pub async fn edit(&self, text: &str, parent: &str) -> Result<Response, RouxError> {
-        let form = [("text", text), ("thing_id", parent)];
+    pub async fn edit(&self, text: &str, parent: &ThingId) -> Result<Response, RouxError> {
+        let form = [("text", text), ("thing_id", parent.full())];
         self.post("api/editusertext", &form).await
     }
 
@@ -262,8 +262,8 @@ impl Me {
 
     /// Report
     #[maybe_async::maybe_async]
-    pub async fn report(&self, id: &str, reason: &str) -> Result<Response, RouxError> {
-        let form = [("id", id), ("reason", reason)];
+    pub async fn report(&self, id: &ThingId, reason: &str) -> Result<Response, RouxError> {
+        let form = [("id", id.full()), ("reason", reason)];
         self.post("api/report", &form).await
     }
 

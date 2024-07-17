@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::models::response::BasicListing;
+use crate::{models::response::BasicListing, ThingId};
 
 /// SubmissionsData
 #[derive(Debug, Serialize, Deserialize)]
@@ -74,8 +74,8 @@ pub struct SubmissionData {
     /// The URL to the link thumbnail. This is "self" if this is a self post, or "default" if
     /// a thumbnail is not available.
     pub thumbnail: String,
-    /// The Reddit ID for the subreddit where this was posted, **including the leading `t5_`**.
-    pub subreddit_id: String,
+    /// The Reddit ID for the subreddit where this was posted.
+    pub subreddit_id: ThingId,
     /// This is `true` if the score is being hidden.
     pub hide_score: bool,
     /// This is `false` if the submission is not edited and is the edit timestamp if it is edited.
@@ -122,7 +122,7 @@ pub struct SubmissionData {
     /// - t5_ - Subreddit
     /// - t6_ - Award
     /// - t8_ - PromoCampaign
-    pub name: String,
+    pub name: ThingId,
     /// A timestamp of the time when the post was created, in the logged-in user's **local**
     /// time.
     pub created: f64,
