@@ -52,15 +52,15 @@ impl User {
     /// Get user's overview.
     #[maybe_async::maybe_async]
     pub async fn overview(&self, options: Option<FeedOption>) -> Result<Overview, RouxError> {
-        let url = &mut format!("https://www.reddit.com/user/{}/overview/.json", self.user);
+        let mut url = format!("https://www.reddit.com/user/{}/overview/.json", self.user);
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
         Ok(self
             .client
-            .get(&url.to_owned())
+            .get(&url)
             .send()
             .await?
             .json::<Overview>()
@@ -70,15 +70,15 @@ impl User {
     /// Get user's submitted posts.
     #[maybe_async::maybe_async]
     pub async fn submitted(&self, options: Option<FeedOption>) -> Result<Submissions, RouxError> {
-        let url = &mut format!("https://www.reddit.com/user/{}/submitted/.json", self.user);
+        let mut url = format!("https://www.reddit.com/user/{}/submitted/.json", self.user);
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
         Ok(self
             .client
-            .get(&url.to_owned())
+            .get(&url)
             .send()
             .await?
             .json::<Submissions>()
@@ -88,15 +88,15 @@ impl User {
     /// Get user's submitted comments.
     #[maybe_async::maybe_async]
     pub async fn comments(&self, options: Option<FeedOption>) -> Result<Comments, RouxError> {
-        let url = &mut format!("https://www.reddit.com/user/{}/comments/.json", self.user);
+        let mut url = format!("https://www.reddit.com/user/{}/comments/.json", self.user);
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
         Ok(self
             .client
-            .get(&url.to_owned())
+            .get(&url)
             .send()
             .await?
             .json::<Comments>()
@@ -106,19 +106,13 @@ impl User {
     /// Get user's about page
     #[maybe_async::maybe_async]
     pub async fn about(&self, options: Option<FeedOption>) -> Result<About, RouxError> {
-        let url = &mut format!("https://www.reddit.com/user/{}/about/.json", self.user);
+        let mut url = format!("https://www.reddit.com/user/{}/about/.json", self.user);
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
-        Ok(self
-            .client
-            .get(&url.to_owned())
-            .send()
-            .await?
-            .json::<About>()
-            .await?)
+        Ok(self.client.get(&url).send().await?.json::<About>().await?)
     }
 }
 

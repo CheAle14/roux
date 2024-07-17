@@ -176,46 +176,46 @@ impl Me {
     /// Get saved
     #[maybe_async::maybe_async]
     pub async fn saved(&self, options: Option<FeedOption>) -> Result<Saved, RouxError> {
-        let url = &mut format!(
+        let mut url = format!(
             "user/{}/saved/.json",
             self.config.username.to_owned().unwrap()
         );
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
-        Ok(self.get(url).await?.json::<Saved>().await?)
+        Ok(self.get(&url).await?.json::<Saved>().await?)
     }
 
     /// Get upvoted
     #[maybe_async::maybe_async]
     pub async fn upvoted(&self, options: Option<FeedOption>) -> Result<Saved, RouxError> {
-        let url = &mut format!(
+        let mut url = format!(
             "user/{}/upvoted/.json",
             self.config.username.to_owned().unwrap()
         );
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
-        Ok(self.get(url).await?.json::<Saved>().await?)
+        Ok(self.get(&url).await?.json::<Saved>().await?)
     }
 
     /// Get downvoted
     #[maybe_async::maybe_async]
     pub async fn downvoted(&self, options: Option<FeedOption>) -> Result<Saved, RouxError> {
-        let url = &mut format!(
+        let mut url = format!(
             "user/{}/downvoted/.json",
             self.config.username.to_owned().unwrap()
         );
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
-        Ok(self.get(url).await?.json::<Saved>().await?)
+        Ok(self.get(&url).await?.json::<Saved>().await?)
     }
 
     /// Get users unread messages

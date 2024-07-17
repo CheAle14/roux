@@ -86,20 +86,20 @@ impl Subreddits {
         limit: Option<u32>,
         options: Option<FeedOption>,
     ) -> Result<SubredditsData, RouxError> {
-        let url = &mut format!("https://www.reddit.com/subreddits/search.json?q={}", name);
+        let mut url = format!("https://www.reddit.com/subreddits/search.json?q={}", name);
 
         if let Some(limit) = limit {
             url.push_str(&format!("&limit={}", limit));
         }
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
         let client = default_client();
 
         Ok(client
-            .get(&url.to_owned())
+            .get(&url)
             .send()
             .await?
             .json::<SubredditsData>()
@@ -178,15 +178,15 @@ impl Subreddit {
         limit: u32,
         options: Option<FeedOption>,
     ) -> Result<Submissions, RouxError> {
-        let url = &mut format!("{}/{}.json?limit={}", self.url, ty, limit);
+        let mut url = format!("{}/{}.json?limit={}", self.url, ty, limit);
 
         if let Some(options) = options {
-            options.build_url(url);
+            options.build_url(&mut url);
         }
 
         Ok(self
             .client
-            .get(&url.to_owned())
+            .get(&url)
             .send()
             .await?
             .json::<Submissions>()
@@ -200,7 +200,7 @@ impl Subreddit {
         depth: Option<u32>,
         limit: Option<u32>,
     ) -> Result<Comments, RouxError> {
-        let url = &mut format!("{}/{}.json?", self.url, ty);
+        let mut url = format!("{}/{}.json?", self.url, ty);
 
         if let Some(depth) = depth {
             url.push_str(&format!("&depth={}", depth));
@@ -210,8 +210,6 @@ impl Subreddit {
             url.push_str(&format!("&limit={}", limit));
         }
 
-        println!("Fetching comments from {url:?}");
-
         // This is one of the dumbest APIs I've ever seen.
         // The comments for a subreddit are stored in a normal hash map
         // but for posts the comments are in an array with the ONLY item
@@ -219,7 +217,7 @@ impl Subreddit {
         if url.contains("comments/") {
             let mut comments = self
                 .client
-                .get(&url.to_owned())
+                .get(&url)
                 .send()
                 .await?
                 .json::<Vec<Comments>>()
@@ -229,7 +227,7 @@ impl Subreddit {
         } else {
             Ok(self
                 .client
-                .get(&url.to_owned())
+                .get(&url)
                 .send()
                 .await?
                 .json::<Comments>()
