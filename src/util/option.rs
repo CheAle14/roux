@@ -73,7 +73,9 @@ impl FeedOption {
     /// Build a url from `FeedOption`
     pub fn build_url(self, url: &mut String) {
         // Add a fake url attr so I don't have to parse things
-        url.push('?');
+        if !url.contains('?') {
+            url.push('?');
+        }
 
         if let Some(after) = self.after {
             url.push_str(&format!("&after={}", after));
