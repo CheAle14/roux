@@ -3,6 +3,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::ThingId;
+
 /// Basic structure of a Reddit response.
 /// See: <https://github.com/reddit-archive/reddit/wiki/JSON>
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,6 +29,23 @@ pub struct Listing<T> {
     pub before: Option<String>,
     /// A list of `things` that this Listing wraps.
     pub children: Vec<T>,
+}
+
+#[derive(Deserialize, Debug)]
+pub(crate) struct PostResponse {
+    pub json: PostResponseInner,
+}
+
+#[derive(Deserialize, Debug)]
+pub(crate) struct PostResponseInner {
+    pub data: Option<PostResponseData>,
+}
+
+#[derive(Deserialize, Debug)]
+pub(crate) struct PostResponseData {
+    #[allow(unused)]
+    pub id: String,
+    pub name: ThingId,
 }
 
 /// Often times a basic thing will have this structure.

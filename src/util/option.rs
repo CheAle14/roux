@@ -73,7 +73,7 @@ impl FeedOption {
     /// Build a url from `FeedOption`
     pub fn build_url(self, url: &mut String) {
         // Add a fake url attr so I don't have to parse things
-        url.push_str(&String::from("?"));
+        url.push('?');
 
         if let Some(after) = self.after {
             url.push_str(&format!("&after={}", after));
@@ -97,7 +97,7 @@ impl FeedOption {
         // Eg. &after={} won't return correct page
         // Eg. &after={}&limit={} returns correct page but won't return correct limit
         // I have no idea why.
-        url.push_str(&String::from("&"));
+        url.push('&');
     }
 }
 

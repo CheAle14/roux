@@ -84,6 +84,9 @@ use client::Client;
 mod models;
 pub use models::*;
 
+/// Builders to help construct requests to the API
+pub mod builders;
+
 /// Utils for requests.
 pub mod util;
 use util::url;

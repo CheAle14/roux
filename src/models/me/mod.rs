@@ -5,14 +5,16 @@ pub mod response;
 
 extern crate reqwest;
 extern crate serde_json;
+
 use serde::Serialize;
 
 use crate::client::{Client, Response};
 use crate::config::Config;
 use crate::models::me::response::MeData;
 use crate::models::{Friend, Inbox, Saved};
+use crate::submission::SubmissionData;
 use crate::util::{url, FeedOption, RouxError};
-use crate::{Submissions, ThingId};
+use crate::{builders::submission::SubmissionSubmitBuilder, Submissions, ThingId};
 
 /// Me
 #[derive(Debug, Clone)]
@@ -61,58 +63,39 @@ impl Me {
         }
     }
 
-    /// Submit link
+    /// Submits a new post to the subreddit from the builder
+    ///
+    /// Note that `subreddit_name` is the display name of the subreddit without the `/r/` prefix, NOT the "full name" (e.g. `t5_abcde`)
     #[maybe_async::maybe_async]
-    pub async fn submit_link(
+    pub async fn submit(
         &self,
-        title: &str,
-        link: &str,
-        sr: &str,
-    ) -> Result<Response, RouxError> {
-        let form = [
-            ("kind", "link"),
-            ("title", title),
-            ("url", link),
-            ("sr", sr),
-        ];
+        subreddit_name: &str,
+        submission: &SubmissionSubmitBuilder,
+    ) -> Result<SubmissionData, RouxError> {
+        #[derive(Serialize)]
+        struct SubmitRequest<'a> {
+            sr: &'a str,
+            #[serde(flatten)]
+            data: &'a SubmissionSubmitBuilder,
+        }
 
-        self.post("api/submit", &form).await
-    }
+        let req = SubmitRequest {
+            sr: subreddit_name,
+            data: submission,
+        };
 
-    /// Submit text
-    #[maybe_async::maybe_async]
-    pub async fn submit_text(
-        &self,
-        title: &str,
-        text: &str,
-        sr: &str,
-    ) -> Result<Response, RouxError> {
-        let form = [
-            ("kind", "self"),
-            ("title", title),
-            ("text", text),
-            ("sr", sr),
-        ];
+        let parsed: crate::response::PostResponse = self
+            .post("api/submit", &req)
+            .await?
+            .error_for_status()?
+            .json()
+            .await?;
 
-        self.post("api/submit", &form).await
-    }
-
-    /// Submit richtext
-    #[maybe_async::maybe_async]
-    pub async fn submit_richtext(
-        &self,
-        title: &str,
-        richtext: &str,
-        sr: &str,
-    ) -> Result<Response, RouxError> {
-        let form = [
-            ("kind", "self"),
-            ("title", title),
-            ("richtext_json", richtext),
-            ("sr", sr),
-        ];
-
-        self.post("api/submit", &form).await
+        let mut submissions = self
+            .get_submissions(&[&parsed.json.data.unwrap().name])
+            .await?;
+        let rtn = submissions.data.children.pop().unwrap();
+        Ok(rtn.data)
     }
 
     /// Adds a friend to a subreddit with the specified type
@@ -253,10 +236,16 @@ impl Me {
     }
 
     /// Get submissions by id
-    /// `ids`: the fullnames of submisions to get, comma separated
     #[maybe_async::maybe_async]
-    pub async fn get_submissions(&self, ids: &str) -> Result<Submissions, RouxError> {
-        let url = format!("/by_id/{ids}");
+    pub async fn get_submissions(&self, ids: &[&ThingId]) -> Result<Submissions, RouxError> {
+        let mut ids = ids.iter().map(|id| id.full());
+        let mut url = format!("/by_id/");
+        url.push_str(ids.next().unwrap());
+        for next in ids {
+            url.push(',');
+            url.push_str(next);
+        }
+
         Ok(self.get(&url).await?.json::<Submissions>().await?)
     }
 

@@ -1,10 +1,7 @@
 //! # Thing Id
 //! A thing id represents a complete identifier to a particular object, encoding both its kind and a base-36 identifier.
 
-use serde::{
-    de::{Error, Visitor},
-    Deserialize, Serialize,
-};
+use serde::{de::Error, Deserialize, Serialize};
 
 /// A wrapper for a thing id, which is a kind and base-36 identifier. The possible kinds include:
 /// - t1_ - Comment
