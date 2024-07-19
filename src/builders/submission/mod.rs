@@ -1,4 +1,4 @@
-use serde::{ser::SerializeStruct, Deserialize, Serialize};
+use serde::{ser::SerializeStruct, Serialize};
 
 /// The type of submission, one of self text, rich text or link.
 #[derive(Debug)]
