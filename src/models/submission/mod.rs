@@ -201,15 +201,37 @@ pub struct SubmissionDataGalleryItem {
 
 /// Submission media metadata
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SubmissionDataMediaMetadata {
-    /// The ID for this media metadata.
-    pub id: String,
-    /// The media type, e.g. `image/png`
-    pub m: String,
-    /// The metadata type, e.g. `Image`
-    pub e: String,
-    /// The media value
-    pub s: SubmissionDataMediaMetadataValue,
+#[serde(tag = "e")]
+pub enum SubmissionDataMediaMetadata {
+    /// An image
+    Image {
+        /// The ID for this media metadata.
+        id: String,
+        /// The media type, e.g. `image/png`
+        m: String,
+        /// The media value
+        s: SubmissionDataMediaMetadataValue,
+    },
+    /// A reddit video
+    RedditVideo {
+        /// Id to the video
+        id: String,
+        /// Whether the video is a gif
+        #[serde(rename = "isGif")]
+        is_gif: bool,
+        /// ??
+        status: String,
+        /// Presuambly width?
+        x: i32,
+        /// Presumably height?
+        y: i32,
+        /// ??
+        #[serde(rename = "dashUrl")]
+        dash_url: String,
+        /// ??
+        #[serde(rename = "hlsUrl")]
+        hls_url: String,
+    },
 }
 
 /// Submission media metadata values
