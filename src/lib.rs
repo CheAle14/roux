@@ -71,15 +71,11 @@
 //! # }
 //! ```
 
-use serde::Deserialize;
-
-use reqwest::header;
-use reqwest::header::USER_AGENT;
-
 mod config;
+pub use config::Config;
 
-mod client;
-use client::Client;
+/// The clients and some models that store them.
+pub mod client;
 
 mod models;
 pub use models::*;
@@ -89,113 +85,4 @@ pub mod builders;
 
 /// Utils for requests.
 pub mod util;
-use util::url;
-
-/// Client to use OAuth with Reddit.
-pub struct Reddit {
-    config: config::Config,
-    client: Client,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(untagged)]
-enum AuthResponse {
-    AuthData { access_token: String },
-    ErrorData { error: String },
-}
-
-impl Reddit {
-    /// Creates a `Reddit` instance with user_agent, client_id, and client_secret.
-    pub fn new(user_agent: &str, client_id: &str, client_secret: &str) -> Reddit {
-        Reddit {
-            config: config::Config::new(user_agent, client_id, client_secret),
-            client: Client::new(),
-        }
-    }
-
-    /// Sets username.
-    pub fn username(mut self, username: &str) -> Reddit {
-        self.config.username = Some(username.to_owned());
-        self
-    }
-
-    /// Sets password.
-    pub fn password(mut self, password: &str) -> Reddit {
-        self.config.password = Some(password.to_owned());
-        self
-    }
-
-    #[maybe_async::maybe_async]
-    async fn create_client(mut self) -> Result<Reddit, util::RouxError> {
-        let url = &url::build_url("api/v1/access_token")[..];
-        let form = [
-            ("grant_type", "password"),
-            (
-                "username",
-                &self
-                    .config
-                    .username
-                    .to_owned()
-                    .ok_or(util::RouxError::CredentialsNotSet)?,
-            ),
-            (
-                "password",
-                &self
-                    .config
-                    .password
-                    .to_owned()
-                    .ok_or(util::RouxError::CredentialsNotSet)?,
-            ),
-        ];
-
-        let request = self
-            .client
-            .post(url)
-            .header(USER_AGENT, &self.config.user_agent[..])
-            .basic_auth(&self.config.client_id, Some(&self.config.client_secret))
-            .form(&form);
-
-        let response = request.send().await?;
-
-        if response.status() == 200 {
-            let auth_data = response.json::<AuthResponse>().await?;
-
-            let access_token = match auth_data {
-                AuthResponse::AuthData { access_token } => access_token,
-                AuthResponse::ErrorData { error } => return Err(util::RouxError::Auth(error)),
-            };
-            let mut headers = header::HeaderMap::new();
-
-            headers.insert(
-                header::AUTHORIZATION,
-                header::HeaderValue::from_str(&format!("Bearer {}", access_token)).unwrap(),
-            );
-
-            headers.insert(
-                header::USER_AGENT,
-                header::HeaderValue::from_str(&self.config.user_agent[..]).unwrap(),
-            );
-
-            self.config.access_token = Some(access_token);
-            self.client = Client::builder().default_headers(headers).build().unwrap();
-
-            Ok(self)
-        } else {
-            Err(util::RouxError::Status(response))
-        }
-    }
-
-    /// Login as a user.
-    #[maybe_async::maybe_async]
-    pub async fn login(self) -> Result<me::Me, util::RouxError> {
-        let reddit = self.create_client().await?;
-        Ok(me::Me::new(&reddit.config, &reddit.client))
-    }
-
-    /// Create a new authenticated `Subreddit` instance.
-    #[maybe_async::maybe_async]
-    pub async fn subreddit(self, name: &str) -> Result<models::Subreddit, util::RouxError> {
-        let reddit = self.create_client().await?;
-        Ok(models::Subreddit::new_oauth(name, &reddit.client))
-    }
-}
+use util::{url, RouxError};

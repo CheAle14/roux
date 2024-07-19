@@ -135,6 +135,13 @@ impl SubmissionSubmitBuilder {
         self
     }
 
+    /// Whether the post is marked as a spoiler.
+    /// Defaults to `false`
+    pub fn with_spoiler(mut self, spoiler: bool) -> Self {
+        self.spoiler = spoiler;
+        self
+    }
+
     /// Whether the post is marked as NSFW.
     /// Defaults to `false`
     pub fn with_nsfw(mut self, nsfw: bool) -> Self {
@@ -153,7 +160,7 @@ mod tests {
         let value = serde_json::to_string(&builder).unwrap();
         assert_eq!(
             value,
-            r#"{"title":"Hello world","sendreplies":false,"kind":"self","text":"**Some body** here"}"#,
+            r#"{"title":"Hello world","sendreplies":false,"nsfw":false,"spoiler":false,"kind":"self","text":"**Some body** here","api_type":"json","validate_on_submit":false}"#,
         );
     }
     #[test]
@@ -161,12 +168,13 @@ mod tests {
         let builder =
             super::SubmissionSubmitBuilder::link("Another test", "https://example.com", false)
                 .with_send_replies(false)
+                .with_spoiler(true)
                 .with_nsfw(true);
 
         let value = serde_json::to_string(&builder).unwrap();
         assert_eq!(
             value,
-            r#"{"title":"Another test","sendreplies":false,"nsfw":true,"kind":"link","url":"https://example.com"}"#,
+            r#"{"title":"Another test","sendreplies":false,"nsfw":true,"spoiler":true,"kind":"link","url":"https://example.com","api_type":"json","validate_on_submit":false}"#,
         );
     }
     #[test]
@@ -179,7 +187,7 @@ mod tests {
         let value = serde_json::to_string(&builder).unwrap();
         assert_eq!(
             value,
-            r#"{"title":"Another test","sendreplies":false,"nsfw":true,"resubmit":true,"kind":"link","url":"https://example.com"}"#,
+            r#"{"title":"Another test","sendreplies":false,"nsfw":true,"spoiler":false,"resubmit":true,"kind":"link","url":"https://example.com","api_type":"json","validate_on_submit":false}"#,
         );
     }
 }

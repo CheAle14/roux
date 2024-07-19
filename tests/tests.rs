@@ -8,9 +8,10 @@ extern crate tokio;
 mod tests {
     use std::env;
 
+    use roux::client::{OAuthClient, RedditClient};
     use roux::saved::SavedData;
     use roux::util::FeedOption;
-    use roux::Reddit;
+    use roux::Config;
     #[cfg(not(feature = "blocking"))]
     use tokio;
 
@@ -26,16 +27,15 @@ mod tests {
         let client_secret = env::var("CLIENT_SECRET").unwrap();
         let username = env::var("USERNAME").unwrap();
         let password = env::var("PASSWORD").unwrap();
+        let config = Config::new(USER_AGENT, &client_id, &client_secret)
+            .username(username)
+            .password(password);
 
-        let client = Reddit::new(&USER_AGENT, &client_id, &client_secret)
-            .username(&username)
-            .password(&password)
+        let me = OAuthClient::new(config.clone())
+            .unwrap()
             .login()
-            .await;
-
-        assert!(client.is_ok());
-
-        let me = client.unwrap();
+            .await
+            .unwrap();
 
         assert!(me.me().await.is_ok());
 
@@ -60,15 +60,10 @@ mod tests {
         assert_ne!(last_child_id1, last_child_id2);
         assert_eq!(saved2.data.children.len(), 5);
 
-        let new_client = Reddit::new(&USER_AGENT, &client_id, &client_secret)
-            .username(&username)
-            .password(&password)
-            .subreddit("astolfo")
-            .await
-            .unwrap();
+        let sub = me.subreddit("astolfo");
 
-        assert!(new_client.top(10, None).await.is_ok());
-        assert!(new_client.moderators().await.is_ok());
+        assert!(sub.top(Some(FeedOption::new().limit(10))).await.is_ok());
+        assert!(sub.moderators().await.is_ok());
     }
 
     #[allow(dead_code)]

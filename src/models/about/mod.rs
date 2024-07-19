@@ -2,7 +2,7 @@
 use serde::Deserialize;
 
 use crate::models::response::BasicThing;
-use crate::models::subreddit::response::SubredditData;
+use crate::models::subreddit::SubredditData;
 
 /// AboutData
 #[derive(Debug, Deserialize)]

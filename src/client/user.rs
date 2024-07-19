@@ -27,125 +27,107 @@
 
 extern crate serde_json;
 
-use crate::client::Client;
-use crate::util::defaults::default_client;
 use crate::util::{FeedOption, RouxError};
 
 use crate::models::{About, Comments, Overview, Submissions};
 
+use super::endpoint::EndpointBuilder;
+use super::traits::RedditClient;
+
 /// User.
-pub struct User {
+pub struct User<T> {
     /// User's name.
     pub user: String,
-    client: Client,
+    client: T,
 }
 
-impl User {
+impl<T: RedditClient> User<T> {
     /// Create a new `User` instance.
-    pub fn new(user: &str) -> User {
+    pub fn new(user: &str, client: T) -> User<T> {
         User {
             user: user.to_owned(),
-            client: default_client(),
+            client,
         }
     }
 
     /// Get user's overview.
     #[maybe_async::maybe_async]
     pub async fn overview(&self, options: Option<FeedOption>) -> Result<Overview, RouxError> {
-        let mut url = format!("https://www.reddit.com/user/{}/overview/.json", self.user);
+        let mut endpoint = EndpointBuilder::from(format!("user/{}/overview", self.user));
 
         if let Some(options) = options {
-            options.build_url(&mut url);
+            options.build_url(&mut endpoint);
         }
 
-        Ok(self
-            .client
-            .get(&url)
-            .send()
-            .await?
-            .json::<Overview>()
-            .await?)
+        self.client.get_json(endpoint).await
     }
 
     /// Get user's submitted posts.
     #[maybe_async::maybe_async]
     pub async fn submitted(&self, options: Option<FeedOption>) -> Result<Submissions, RouxError> {
-        let mut url = format!("https://www.reddit.com/user/{}/submitted/.json", self.user);
+        let mut url = EndpointBuilder::from(format!("user/{}/submitted", self.user));
 
         if let Some(options) = options {
             options.build_url(&mut url);
         }
 
-        Ok(self
-            .client
-            .get(&url)
-            .send()
-            .await?
-            .json::<Submissions>()
-            .await?)
+        self.client.get_json(url).await
     }
 
     /// Get user's submitted comments.
     #[maybe_async::maybe_async]
     pub async fn comments(&self, options: Option<FeedOption>) -> Result<Comments, RouxError> {
-        let mut url = format!("https://www.reddit.com/user/{}/comments/.json", self.user);
+        let mut url = EndpointBuilder::from(format!("user/{}/comments", self.user));
 
         if let Some(options) = options {
             options.build_url(&mut url);
         }
 
-        Ok(self
-            .client
-            .get(&url)
-            .send()
-            .await?
-            .json::<Comments>()
-            .await?)
+        self.client.get_json(url).await
     }
 
     /// Get user's about page
     #[maybe_async::maybe_async]
     pub async fn about(&self, options: Option<FeedOption>) -> Result<About, RouxError> {
-        let mut url = format!("https://www.reddit.com/user/{}/about/.json", self.user);
+        let mut url = EndpointBuilder::from(format!("{}/about", self.user));
 
         if let Some(options) = options {
             options.build_url(&mut url);
         }
 
-        Ok(self.client.get(&url).send().await?.json::<About>().await?)
+        self.client.get_json(url).await
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::User;
-    use crate::util::FeedOption;
+    use crate::{
+        client::{noauth::UnauthedClient, traits::RedditClient},
+        util::FeedOption,
+    };
 
     #[maybe_async::async_impl]
     #[tokio::test]
     async fn test_no_auth() {
-        let user = User::new("beneater");
+        let client = UnauthedClient::new().unwrap();
+        let user = client.user("beneater");
 
         // Test overview
-        let overview = user.overview(None).await;
-        assert!(overview.is_ok());
+        let overview = user.overview(None).await.unwrap();
 
         // Test submitted
-        let submitted = user.submitted(None).await;
-        assert!(submitted.is_ok());
+        let submitted = user.submitted(None).await.unwrap();
 
         // Test comments
-        let comments = user.comments(None).await;
-        assert!(comments.is_ok());
+        let comments = user.comments(None).await.unwrap();
 
         // Test about
-        let about = user.about(None).await;
-        assert!(about.is_ok());
+        let about = user.about(None).await.unwrap();
 
         // Test feed options
-        let after = comments.unwrap().data.after.unwrap();
+        let after = comments.data.after.unwrap();
         let after_options = FeedOption::new().after(&after);
-        let next_comments = user.comments(Some(after_options)).await;
-        assert!(next_comments.is_ok());
+        let next_comments = user.comments(Some(after_options)).await.unwrap();
     }
 }

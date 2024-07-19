@@ -5,6 +5,8 @@
 //! "next" and "prev" buttons on the site and in combination with count can be used to page
 //! through the listing.
 
+use crate::client::endpoint::EndpointBuilder;
+
 /// Basic feed options
 #[derive(Clone, Debug)]
 pub struct FeedOption {
@@ -71,35 +73,24 @@ impl FeedOption {
     }
 
     /// Build a url from `FeedOption`
-    pub fn build_url(self, url: &mut String) {
-        // Add a fake url attr so I don't have to parse things
-        if !url.contains('?') {
-            url.push('?');
-        }
-
+    pub fn build_url(self, endpoint: &mut EndpointBuilder) {
         if let Some(after) = self.after {
-            url.push_str(&format!("&after={}", after));
+            endpoint.with_query("after", after);
         } else if let Some(before) = self.before {
-            url.push_str(&format!("&before={}", before));
+            endpoint.with_query("before", before);
         }
 
         if let Some(count) = self.count {
-            url.push_str(&format!("&count={}", count));
+            endpoint.with_query("count", count.to_string());
         }
 
         if let Some(limit) = self.limit {
-            url.push_str(&format!("&limit={}", limit));
+            endpoint.with_query("limit", limit.to_string());
         }
 
         if let Some(period) = self.period {
-            url.push_str(&format!("&t={}", period.get_string_for_period()));
+            endpoint.with_query("t", period.get_string_for_period());
         }
-
-        // HACK : the previous option won't work if a '&' isn't appended for some reason
-        // Eg. &after={} won't return correct page
-        // Eg. &after={}&limit={} returns correct page but won't return correct limit
-        // I have no idea why.
-        url.push('&');
     }
 }
 
@@ -142,6 +133,8 @@ impl TimePeriod {
 
 #[cfg(test)]
 mod tests {
+    use crate::client::endpoint::EndpointBuilder;
+
     use super::FeedOption;
 
     #[test]
@@ -149,10 +142,12 @@ mod tests {
         let after = "some_after";
         let options = FeedOption::new().after(after);
 
-        let url = &mut String::from("");
-        options.build_url(url);
+        let mut url = EndpointBuilder::new("");
+        options.build_url(&mut url);
 
-        assert!(*url == format!("?&after={}&", after))
+        let build = url.build("");
+
+        assert_eq!(build, format!("/.json?after={}&", after))
     }
 
     #[test]
@@ -160,10 +155,10 @@ mod tests {
         let before = "some_before";
         let options = FeedOption::new().before(before);
 
-        let url = &mut String::from("");
-        options.build_url(url);
+        let mut url = EndpointBuilder::new("");
+        options.build_url(&mut url);
 
-        assert!(*url == format!("?&before={}&", before))
+        assert_eq!(url.build(""), format!("/.json?before={}&", before))
     }
 
     #[test]
@@ -171,9 +166,9 @@ mod tests {
         let count = 100u32;
         let options = FeedOption::new().count(count);
 
-        let url = &mut String::from("");
-        options.build_url(url);
+        let mut url = EndpointBuilder::new("");
+        options.build_url(&mut url);
 
-        assert!(*url == format!("?&count={}&", count))
+        assert_eq!(url.build(""), format!("/.json?count={}&", count))
     }
 }
