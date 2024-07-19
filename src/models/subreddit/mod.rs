@@ -189,6 +189,7 @@ impl Subreddit {
             .get(&url)
             .send()
             .await?
+            .error_for_status()?
             .json::<Submissions>()
             .await?)
     }
