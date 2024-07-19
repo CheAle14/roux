@@ -108,6 +108,9 @@ pub struct SubmissionData {
     /// This is `true` if this is a gallery post.
     #[serde(default)]
     pub is_gallery: bool,
+    /// This is `true` if this is a video, the `url` would then be to a video.
+    #[serde(default)]
+    pub is_video: bool,
     // TODO: skipped from_id
     /// The permanent, long link for this submission.
     pub permalink: String,
