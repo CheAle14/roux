@@ -37,7 +37,7 @@ macro_rules! impl_comment {
             }
 
             /// Whether the comment has been approved.
-            pub fn approved(&self) -> &bool {
+            pub fn approved(&self) -> &Option<bool> {
                 &self.data.common.approved
             }
 
@@ -191,7 +191,7 @@ macro_rules! impl_comment {
             }
 
             /// Presumably some kind of `mod` or `admin` enum?
-            pub fn distinguished(&self) -> &Option<Value> {
+            pub fn distinguished(&self) -> &Option<String> {
                 &self.data.common.distinguished
             }
 
@@ -222,8 +222,8 @@ macro_rules! impl_comment {
             }
 
             /// Whether this comment has reports ignored.
-            pub fn ignore_reports(&self) -> bool {
-                self.data.common.ignore_reports
+            pub fn ignore_reports(&self) -> &Option<bool> {
+                &self.data.common.ignore_reports
             }
 
             /// Whether you are the submitter of the post this comment is under.
@@ -277,8 +277,8 @@ macro_rules! impl_comment {
             }
 
             /// How many times this comment has been reported
-            pub fn num_reports(&self) -> i32 {
-                self.data.common.num_reports
+            pub fn num_reports(&self) -> &Option<i32> {
+                &self.data.common.num_reports
             }
 
             /// The full name of the parent of this comment.
@@ -300,8 +300,8 @@ macro_rules! impl_comment {
             }
 
             /// Whether this comment has been removed
-            pub fn removed(&self) -> bool {
-                self.data.common.removed
+            pub fn removed(&self) -> &Option<bool> {
+                &self.data.common.removed
             }
 
             /// The replies to this comment.
@@ -312,7 +312,7 @@ macro_rules! impl_comment {
             }
 
             /// ??
-            pub fn report_reasons(&self) -> &Vec<Value> {
+            pub fn report_reasons(&self) -> &Option<Vec<Value>> {
                 &self.data.common.report_reasons
             }
 
@@ -337,8 +337,8 @@ macro_rules! impl_comment {
             }
 
             /// Whether this comment has been removed as spam.
-            pub fn spam(&self) -> bool {
-                self.data.common.spam
+            pub fn spam(&self) -> &Option<bool> {
+                &self.data.common.spam
             }
 
             /// Whether the comment has been stickied. Can only apply to top-level comments.
