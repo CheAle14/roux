@@ -77,6 +77,10 @@ pub use config::Config;
 /// The clients and some models that store them.
 pub mod client;
 
+/// Models that can be interacted with (e.g. reported, edited) using a stored client
+pub mod models;
+
+/// The data structures as returned by Reddit's API
 pub mod api;
 
 /// Builders to help construct requests to the API

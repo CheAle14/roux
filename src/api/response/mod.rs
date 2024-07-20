@@ -24,9 +24,9 @@ pub struct Listing<T> {
     /// The number of children in the listing.
     pub dist: Option<i32>,
     /// The fullname of the listing that follows after this page.
-    pub after: Option<String>,
+    pub after: Option<ThingId>,
     /// The fullname of the listing that follows before this page.
-    pub before: Option<String>,
+    pub before: Option<ThingId>,
     /// A list of `things` that this Listing wraps.
     pub children: Vec<T>,
 }

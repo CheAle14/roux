@@ -30,7 +30,7 @@ impl AuthedClient {
         &self,
         subreddit_name: &str,
         submission: &SubmissionSubmitBuilder,
-    ) -> Result<SubmissionData, RouxError> {
+    ) -> Result<crate::models::Submission<Self>, RouxError> {
         #[derive(Serialize)]
         struct SubmitRequest<'a> {
             sr: &'a str,
@@ -50,7 +50,8 @@ impl AuthedClient {
             .get_submissions(&[&parsed.json.data.unwrap().name])
             .await?;
         let rtn = submissions.data.children.pop().unwrap();
-        Ok(rtn.data)
+
+        Ok(crate::models::Submission::new(self.clone(), rtn.data))
     }
 
     /// Adds a friend to a subreddit with the specified type
@@ -173,28 +174,6 @@ impl AuthedClient {
     pub async fn mark_unread(&self, ids: &str) -> Result<super::req::Response, RouxError> {
         let form = [("id", ids)];
         self.0.post("api/unread_message", &form).await
-    }
-
-    /// Comment
-    #[maybe_async::maybe_async]
-    pub async fn comment(
-        &self,
-        text: &str,
-        parent: &ThingId,
-    ) -> Result<super::req::Response, RouxError> {
-        let form = [("text", text), ("parent", parent.full())];
-        self.0.post("api/comment", &form).await
-    }
-
-    /// Edit a 'thing'
-    #[maybe_async::maybe_async]
-    pub async fn edit(
-        &self,
-        text: &str,
-        parent: &ThingId,
-    ) -> Result<super::req::Response, RouxError> {
-        let form = [("text", text), ("thing_id", parent.full())];
-        self.0.post("api/editusertext", &form).await
     }
 
     /// Get submissions by id

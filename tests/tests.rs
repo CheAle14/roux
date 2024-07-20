@@ -8,8 +8,8 @@ extern crate tokio;
 mod tests {
     use std::env;
 
+    use roux::api::saved::SavedData;
     use roux::client::{OAuthClient, RedditClient};
-    use roux::saved::SavedData;
     use roux::util::FeedOption;
     use roux::Config;
     #[cfg(not(feature = "blocking"))]
@@ -48,7 +48,7 @@ mod tests {
         };
 
         let saved2 = me
-            .saved(Some(options.after(&saved1.data.after.unwrap())))
+            .saved(Some(options.after(&saved1.data.after.unwrap().full())))
             .await
             .unwrap();
 

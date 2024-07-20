@@ -65,13 +65,16 @@
 //! ```
 use crate::api::subreddit::{SubredditData, SubredditResponse, SubredditsData};
 
+use crate::models::{Listing, Submission};
 use crate::util::{FeedOption, RouxError};
 
-use crate::api::{Comments, Moderators, Submissions, ThingId};
+use crate::api::{Comments, Moderators, ThingId};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;
 use super::AuthedClient;
+
+type Submissions<T> = Listing<Submission<T>>;
 
 /// Access subreddits API
 pub struct Subreddits<T>(pub(crate) T);
@@ -101,7 +104,7 @@ pub struct Subreddit<T> {
     client: T,
 }
 
-impl<T: RedditClient> Subreddit<T> {
+impl<T: RedditClient + Clone> Subreddit<T> {
     /// Create a new `Subreddit` instance.
     pub fn new(name: impl Into<String>, client: T) -> Subreddit<T> {
         Subreddit {
@@ -129,14 +132,17 @@ impl<T: RedditClient> Subreddit<T> {
         &self,
         ty: &str,
         options: Option<FeedOption>,
-    ) -> Result<Submissions, RouxError> {
+    ) -> Result<Submissions<T>, RouxError> {
         let mut endpoint = self.endpoint(format!("{ty}"));
 
         if let Some(options) = options {
             options.build_url(&mut endpoint);
         }
 
-        self.client.get_json(endpoint).await
+        let api: crate::api::Submissions = self.client.get_json(endpoint).await?;
+        let listing = Listing::new(api, |api| Submission::new(self.client.clone(), api));
+
+        Ok(listing)
     }
 
     #[maybe_async::maybe_async]
@@ -171,25 +177,25 @@ impl<T: RedditClient> Subreddit<T> {
 
     /// Get hot posts.
     #[maybe_async::maybe_async]
-    pub async fn hot(&self, options: Option<FeedOption>) -> Result<Submissions, RouxError> {
+    pub async fn hot(&self, options: Option<FeedOption>) -> Result<Submissions<T>, RouxError> {
         self.get_feed("hot", options).await
     }
 
     /// Get rising posts.
     #[maybe_async::maybe_async]
-    pub async fn rising(&self, options: Option<FeedOption>) -> Result<Submissions, RouxError> {
+    pub async fn rising(&self, options: Option<FeedOption>) -> Result<Submissions<T>, RouxError> {
         self.get_feed("rising", options).await
     }
 
     /// Get top posts.
     #[maybe_async::maybe_async]
-    pub async fn top(&self, options: Option<FeedOption>) -> Result<Submissions, RouxError> {
+    pub async fn top(&self, options: Option<FeedOption>) -> Result<Submissions<T>, RouxError> {
         self.get_feed("top", options).await
     }
 
     /// Get latest posts.
     #[maybe_async::maybe_async]
-    pub async fn latest(&self, options: Option<FeedOption>) -> Result<Submissions, RouxError> {
+    pub async fn latest(&self, options: Option<FeedOption>) -> Result<Submissions<T>, RouxError> {
         self.get_feed("new", options).await
     }
 
@@ -250,15 +256,7 @@ mod tests {
         let latest_comments = subreddit.latest_comments(None, Some(25)).await;
         assert!(latest_comments.is_ok());
 
-        let article_id = &hot
-            .unwrap()
-            .data
-            .children
-            .first()
-            .unwrap()
-            .data
-            .name
-            .clone();
+        let article_id = &hot.unwrap().children.first().unwrap().name().clone();
         let article_comments = subreddit.article_comments(article_id, None, Some(25)).await;
         assert!(article_comments.is_ok());
 

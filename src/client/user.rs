@@ -127,7 +127,7 @@ mod tests {
 
         // Test feed options
         let after = comments.data.after.unwrap();
-        let after_options = FeedOption::new().after(&after);
+        let after_options = FeedOption::new().after(&after.full());
         let next_comments = user.comments(Some(after_options)).await.unwrap();
     }
 }
