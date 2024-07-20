@@ -5,6 +5,7 @@ use crate::{builders::form::FormBuilder, client::endpoint::EndpointBuilder};
 use reqwest::{header, Method, StatusCode};
 use serde::{Deserialize, Serialize};
 
+use super::ratelimit::Ratelimit;
 use super::{req::*, AuthedClient};
 use crate::{config::Config, util::RouxError};
 
@@ -12,6 +13,7 @@ pub(crate) struct ClientInner {
     config: Config,
     base_url: &'static str,
     inner: Client,
+    ratelimit: Mutex<Ratelimit>,
 }
 
 /// An OAuth client that is not yet authenticated with any particular user.
@@ -55,6 +57,7 @@ impl OAuthClient {
                 base_url,
                 config,
                 inner: client,
+                ratelimit: Mutex::new(Ratelimit::new()),
             }),
         })
     }
@@ -138,12 +141,35 @@ impl OAuthClient {
         self.inner.inner.request(method, url)
     }
 
+    #[cfg(feature = "blocking")]
+    pub(crate) fn with_ratelimits(
+        &self,
+        request: Request,
+    ) -> Result<Response, crate::util::RouxError> {
+        let mut lock = self.inner.ratelimit.lock().unwrap();
+        lock.delay();
+        let response = self.inner.inner.execute(request)?;
+        lock.update(response.headers());
+        Ok(response)
+    }
+    #[cfg(not(feature = "blocking"))]
+    pub(crate) async fn with_ratelimits(
+        &self,
+        request: Request,
+    ) -> Result<Response, crate::util::RouxError> {
+        let mut lock = self.inner.ratelimit.lock().await;
+        lock.delay().await;
+        let response = self.inner.inner.execute(request).await?;
+        lock.update(response.headers());
+        Ok(response)
+    }
+
     #[maybe_async::maybe_async]
     pub(crate) async fn execute(
         &self,
         request: Request,
     ) -> Result<Response, crate::util::RouxError> {
-        let response = self.inner.inner.execute(request).await?;
+        let response = self.with_ratelimits(request).await?;
         if let Err(e) = response.error_for_status_ref() {
             let status = e.status().unwrap_or(StatusCode::BAD_REQUEST);
             match status {
@@ -179,6 +205,7 @@ impl RedditClient for OAuthClient {
     #[maybe_async::maybe_async]
     async fn get(&self, endpoint: impl Into<EndpointBuilder>) -> Result<Response, RouxError> {
         let r = self.request(Method::GET, endpoint).build()?;
+
         self.execute(r).await
     }
 
