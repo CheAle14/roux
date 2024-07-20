@@ -1,5 +1,4 @@
 use serde::de::DeserializeOwned;
-use serde::Serialize;
 
 use crate::builders::form::FormBuilder;
 use crate::util::RouxError;

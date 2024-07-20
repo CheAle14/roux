@@ -88,4 +88,4 @@ pub mod builders;
 
 /// Utils for requests.
 pub mod util;
-use util::{url, RouxError};
+use util::RouxError;

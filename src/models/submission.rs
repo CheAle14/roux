@@ -15,7 +15,7 @@ use crate::{
     RouxError,
 };
 
-use super::{ArticleComment, CreatedComment, Listing};
+use super::{CreatedComment, Listing};
 
 pub(crate) type Submissions<T> = Listing<Submission<T>>;
 

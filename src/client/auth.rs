@@ -1,6 +1,5 @@
 use serde::Serialize;
 
-use crate::api::comment::article::ArticleCommentData;
 use crate::api::comment::created::CreatedCommentData;
 use crate::api::me::MeData;
 use crate::api::response::{LazyThingCreatedData, MultipleBasicThingsData, PostResponse};
@@ -8,7 +7,7 @@ use crate::api::saved::SavedData;
 use crate::api::{APISubmissions, Friend, Inbox, Saved as APISaved, ThingId};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
-use crate::models::{ArticleComment, CreatedComment, LatestComment, Listing, Saved, Submission};
+use crate::models::{CreatedComment, LatestComment, Listing, Saved, Submission};
 use crate::util::{FeedOption, RouxError};
 
 use super::endpoint::EndpointBuilder;
