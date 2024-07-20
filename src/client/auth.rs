@@ -1,12 +1,13 @@
 use serde::Serialize;
 
 use crate::api::comment::article::ArticleCommentData;
+use crate::api::comment::created::CreatedCommentData;
 use crate::api::me::MeData;
 use crate::api::response::{LazyThingCreatedData, MultipleBasicThingsData, PostResponse};
 use crate::api::saved::SavedData;
 use crate::api::{APISubmissions, Friend, Inbox, Saved as APISaved, ThingId};
 use crate::builders::submission::SubmissionSubmitBuilder;
-use crate::models::{ArticleComment, LatestComment, Listing, Saved, Submission};
+use crate::models::{ArticleComment, CreatedComment, LatestComment, Listing, Saved, Submission};
 use crate::util::{FeedOption, RouxError};
 
 use super::endpoint::EndpointBuilder;
@@ -184,17 +185,17 @@ impl AuthedClient {
         &self,
         text: &str,
         parent: &ThingId,
-    ) -> Result<ArticleComment<Self>, RouxError> {
         let form = [
             ("api_type", "json"),
             ("text", text),
             ("parent", parent.full()),
         ];
 
-        let response: PostResponse<MultipleBasicThingsData<ArticleCommentData>> =
+    ) -> Result<CreatedComment<Self>, RouxError> {
+        let response: PostResponse<MultipleBasicThingsData<CreatedCommentData>> =
             self.0.post_with_response("api/comment", &form).await?;
 
-        Ok(ArticleComment::new(
+        Ok(CreatedComment::new(
             self.clone(),
             response.json.data.unwrap().assume_single(),
         ))

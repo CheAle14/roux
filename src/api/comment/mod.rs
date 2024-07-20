@@ -2,6 +2,7 @@
 
 pub mod article;
 pub mod common;
+pub mod created;
 pub mod latest;
 
 use super::response::BasicListing;

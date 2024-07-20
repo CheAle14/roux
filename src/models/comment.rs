@@ -1,7 +1,9 @@
 use crate::{
     api::{
-        comment::article::ArticleCommentData, comment::latest::LatestCommentData, MaybeReplies,
-        ThingId,
+        comment::{
+            article::ArticleCommentData, created::CreatedCommentData, latest::LatestCommentData,
+        },
+        MaybeReplies, ThingId,
     },
     client::{AuthedClient, RedditClient},
     util::RouxError,
@@ -273,6 +275,11 @@ macro_rules! impl_comment {
                 self.data.common.no_follow
             }
 
+            /// How many times this comment has been reported
+            pub fn num_reports(&self) -> i32 {
+                self.data.common.num_reports
+            }
+
             /// The full name of the parent of this comment.
             ///
             /// If this is top-level comment, this will be the Submission's full name (and the [`kind`](crate::models::ThingId::kind) will be `t3`).
@@ -404,7 +411,7 @@ macro_rules! impl_comment {
             pub async fn reply(
                 &self,
                 text: &str,
-            ) -> Result<ArticleComment<crate::client::AuthedClient>, RouxError> {
+            ) -> Result<CreatedComment<crate::client::AuthedClient>, RouxError> {
                 self.client.comment(text, &self.data.common.name).await
             }
 
@@ -421,6 +428,7 @@ macro_rules! impl_comment {
 
 impl_comment!(LatestComment, LatestCommentData, "Represents a comment found through the [`Subreddit::latest_comments`](crate::client::Subreddit::latest_comments) or similar overview functions. For a comment with full information, see [`ArticleComment`](crate::models::comment::ArticleComment)");
 impl_comment!(ArticleComment, ArticleCommentData, "Represents a comment with full information found through either creating it or [`crate::models::Submission::article_comments`]. For a comment with less information, see [`LatestComment`](crate::models::comment::LatestComment)");
+impl_comment!(CreatedComment, CreatedCommentData, "Represents a comment that you have created, either under a submission or in reply to another comment.");
 
 impl<T> LatestComment<T> {
     /// Author of the link post this comment is under.

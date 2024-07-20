@@ -55,6 +55,7 @@ pub struct CommonCommentData {
     pub mod_reports: Vec<[String; 2]>,
     pub name: ThingId,
     pub no_follow: bool,
+    pub num_reports: i32,
     pub parent_id: ThingId,
     pub permalink: String,
     pub removal_reason: Option<Value>,

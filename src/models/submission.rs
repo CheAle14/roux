@@ -14,7 +14,7 @@ use crate::{
     RouxError,
 };
 
-use super::{ArticleComment, Listing};
+use super::{ArticleComment, CreatedComment, Listing};
 
 pub(crate) type Submissions<T> = Listing<Submission<T>>;
 
@@ -283,7 +283,7 @@ impl Submission<crate::client::AuthedClient> {
     pub async fn comment(
         &self,
         text: &str,
-    ) -> Result<ArticleComment<crate::client::AuthedClient>, RouxError> {
+    ) -> Result<CreatedComment<crate::client::AuthedClient>, RouxError> {
         self.client.comment(text, &self.data.name).await
     }
 

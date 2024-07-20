@@ -12,4 +12,4 @@ pub(crate) mod saved;
 pub use saved::Saved;
 
 pub(crate) mod comment;
-pub use comment::{ArticleComment, LatestComment};
+pub use comment::{ArticleComment, CreatedComment, LatestComment};
