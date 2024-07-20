@@ -1,7 +1,7 @@
 //! # Subreddit Moderator Responses
 use serde::Deserialize;
 
-use crate::response::{BasicThing, Listing};
+use crate::api::response::{BasicThing, Listing};
 
 /// ModeratorsData
 #[derive(Debug, Deserialize)]

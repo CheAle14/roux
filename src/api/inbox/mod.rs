@@ -1,7 +1,7 @@
 //! # Inbox Responses
 use serde::Deserialize;
 
-use crate::{models::response::BasicListing, ThingId};
+use crate::{api::response::BasicListing, api::ThingId};
 
 /// InboxItem
 #[derive(Debug, Deserialize)]

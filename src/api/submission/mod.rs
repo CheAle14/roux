@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{models::response::BasicListing, ThingId};
+use crate::{api::response::BasicListing, api::ThingId};
 
 /// SubmissionsData
 #[derive(Debug, Serialize, Deserialize)]

@@ -2,9 +2,9 @@
 
 use serde::Deserialize;
 
-use crate::models::comment::CommentData;
-use crate::models::response::BasicListing;
-use crate::models::submission::SubmissionData;
+use crate::api::comment::CommentData;
+use crate::api::response::BasicListing;
+use crate::api::submission::SubmissionData;
 
 /// A saved item can be a comment or post
 #[derive(Debug, Deserialize)]

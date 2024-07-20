@@ -1,8 +1,8 @@
 //! # User Overview Responses
 use serde::Deserialize;
 
-use crate::models::response::BasicThing;
-use crate::models::subreddit::SubredditData;
+use crate::api::response::BasicThing;
+use crate::api::subreddit::SubredditData;
 
 /// AboutData
 #[derive(Debug, Deserialize)]

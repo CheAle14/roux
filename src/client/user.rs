@@ -29,7 +29,7 @@ extern crate serde_json;
 
 use crate::util::{FeedOption, RouxError};
 
-use crate::models::{About, Comments, Overview, Submissions};
+use crate::api::{About, Comments, Overview, Submissions};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;

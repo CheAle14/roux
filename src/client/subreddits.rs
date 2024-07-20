@@ -63,12 +63,11 @@
 //! let next_hot = subreddit.hot(25, Some(after_options)).await;
 //! # }
 //! ```
-use crate::models::subreddit::{SubredditData, SubredditResponse, SubredditsData};
+use crate::api::subreddit::{SubredditData, SubredditResponse, SubredditsData};
 
 use crate::util::{FeedOption, RouxError};
 
-use crate::models::{Comments, Moderators, Submissions};
-use crate::ThingId;
+use crate::api::{Comments, Moderators, Submissions, ThingId};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;

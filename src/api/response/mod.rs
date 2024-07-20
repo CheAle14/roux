@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::ThingId;
+use crate::api::ThingId;
 
 /// Basic structure of a Reddit response.
 /// See: <https://github.com/reddit-archive/reddit/wiki/JSON>

@@ -1,10 +1,10 @@
 use serde::Serialize;
 
-use crate::models::me::MeData;
-use crate::models::{Friend, Inbox, Saved};
-use crate::submission::SubmissionData;
+use crate::api::me::MeData;
+use crate::api::submission::SubmissionData;
+use crate::api::{Friend, Inbox, Saved, Submissions, ThingId};
+use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::util::{FeedOption, RouxError};
-use crate::{builders::submission::SubmissionSubmitBuilder, Submissions, ThingId};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;
@@ -43,7 +43,7 @@ impl AuthedClient {
             data: submission,
         };
 
-        let parsed: crate::response::PostResponse =
+        let parsed: crate::api::response::PostResponse =
             self.0.post_with_response("api/submit", &req).await?;
 
         let mut submissions = self
@@ -211,17 +211,6 @@ impl AuthedClient {
         let url = EndpointBuilder::new(url);
 
         self.0.get_json(url).await
-    }
-
-    /// Report
-    #[maybe_async::maybe_async]
-    pub async fn report(
-        &self,
-        id: &ThingId,
-        reason: &str,
-    ) -> Result<super::req::Response, RouxError> {
-        let form = [("id", id.full()), ("reason", reason)];
-        self.0.post("api/report", &form).await
     }
 
     /// Logout

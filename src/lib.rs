@@ -77,8 +77,7 @@ pub use config::Config;
 /// The clients and some models that store them.
 pub mod client;
 
-mod models;
-pub use models::*;
+pub mod api;
 
 /// Builders to help construct requests to the API
 pub mod builders;
