@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::api::comment::CommentData;
+use crate::api::comment::latest::LatestCommentData;
 use crate::api::response::BasicListing;
 use crate::api::submission::SubmissionData;
 
@@ -13,7 +13,7 @@ pub enum SavedData {
     /// Post
     Submission(SubmissionData),
     /// Comment
-    Comment(CommentData),
+    Comment(LatestCommentData),
 }
 
 /// Saved listing

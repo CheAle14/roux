@@ -63,18 +63,21 @@
 //! let next_hot = subreddit.hot(25, Some(after_options)).await;
 //! # }
 //! ```
+use crate::api::comment::latest::LatestCommentData;
 use crate::api::subreddit::{SubredditData, SubredditResponse, SubredditsData};
 
-use crate::models::{Listing, Submission};
+use crate::builders::submission::SubmissionSubmitBuilder;
+use crate::models::comment::{ArticleComments, LatestComments};
+use crate::models::submission::Submissions;
+use crate::models::{ArticleComment, LatestComment, Listing, Submission};
 use crate::util::{FeedOption, RouxError};
 
-use crate::api::{Comments, Moderators, ThingId};
+use crate::api::response::BasicListing as APIListing;
+use crate::api::{Moderators, ThingId};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;
 use super::AuthedClient;
-
-type Submissions<T> = Listing<Submission<T>>;
 
 /// Access subreddits API
 pub struct Subreddits<T>(pub(crate) T);
@@ -139,40 +142,10 @@ impl<T: RedditClient + Clone> Subreddit<T> {
             options.build_url(&mut endpoint);
         }
 
-        let api: crate::api::Submissions = self.client.get_json(endpoint).await?;
+        let api: crate::api::APISubmissions = self.client.get_json(endpoint).await?;
         let listing = Listing::new(api, |api| Submission::new(self.client.clone(), api));
 
         Ok(listing)
-    }
-
-    #[maybe_async::maybe_async]
-    async fn get_comment_feed(
-        &self,
-        ty: &str,
-        depth: Option<u32>,
-        limit: Option<u32>,
-    ) -> Result<Comments, RouxError> {
-        let mut endpoint = self.endpoint(format!("{ty}"));
-
-        if let Some(depth) = depth {
-            endpoint.with_query("depth", depth.to_string());
-        }
-
-        if let Some(limit) = limit {
-            endpoint.with_query("limit", limit.to_string());
-        }
-
-        // This is one of the dumbest APIs I've ever seen.
-        // The comments for a subreddit are stored in a normal hash map
-        // but for posts the comments are in an array with the ONLY item
-        // being same hash map as the one for subreddits...
-        if endpoint.path.contains("comments/") {
-            let mut comments: Vec<Comments> = self.client.get_json(endpoint).await?;
-
-            Ok(comments.pop().unwrap())
-        } else {
-            self.client.get_json(endpoint).await
-        }
     }
 
     /// Get hot posts.
@@ -205,8 +178,21 @@ impl<T: RedditClient + Clone> Subreddit<T> {
         &self,
         depth: Option<u32>,
         limit: Option<u32>,
-    ) -> Result<Comments, RouxError> {
-        self.get_comment_feed("comments", depth, limit).await
+    ) -> Result<LatestComments<T>, RouxError> {
+        let mut endpoint = self.endpoint("comments");
+
+        if let Some(depth) = depth {
+            endpoint.with_query("depth", depth.to_string());
+        }
+
+        if let Some(limit) = limit {
+            endpoint.with_query("limit", limit.to_string());
+        }
+
+        let api: APIListing<LatestCommentData> = self.client.get_json(endpoint).await?;
+
+        let conv = Listing::new(api, |data| LatestComment::new(self.client.clone(), data));
+        Ok(conv)
     }
 
     /// Get comments from article.
@@ -216,9 +202,25 @@ impl<T: RedditClient + Clone> Subreddit<T> {
         article: &ThingId,
         depth: Option<u32>,
         limit: Option<u32>,
-    ) -> Result<Comments, RouxError> {
-        self.get_comment_feed(&format!("comments/{}", article.id()), depth, limit)
-            .await
+    ) -> Result<ArticleComments<T>, RouxError> {
+        let mut endpoint = self.endpoint(format!("comments/{}", article.id()));
+
+        if let Some(depth) = depth {
+            endpoint.with_query("depth", depth.to_string());
+        }
+
+        if let Some(limit) = limit {
+            endpoint.with_query("limit", limit.to_string());
+        }
+
+        let comments: crate::api::comment::ArticleCommentsResponse =
+            self.client.get_json(endpoint).await?;
+
+        let conv = Listing::new(comments.comments, |data| {
+            ArticleComment::new(self.client.clone(), data)
+        });
+
+        Ok(conv)
     }
 }
 
@@ -228,6 +230,15 @@ impl Subreddit<AuthedClient> {
     pub async fn moderators(&self) -> Result<Moderators, RouxError> {
         let endpoint = self.endpoint("about/moderators");
         self.client.get_json(endpoint).await
+    }
+
+    /// Submits a post to this subreddit
+    #[maybe_async::maybe_async]
+    pub async fn submit(
+        &self,
+        submission: &SubmissionSubmitBuilder,
+    ) -> Result<Submission<AuthedClient>, RouxError> {
+        self.client.submit(&self.name, submission).await
     }
 }
 

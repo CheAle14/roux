@@ -1,13 +1,18 @@
 use serde::Serialize;
 
+use crate::api::comment::article::ArticleCommentData;
 use crate::api::me::MeData;
-use crate::api::submission::SubmissionData;
-use crate::api::{Friend, Inbox, Saved, Submissions, ThingId};
+use crate::api::response::{LazyThingCreatedData, MultipleBasicThingsData, PostResponse};
+use crate::api::saved::SavedData;
+use crate::api::{APISubmissions, Friend, Inbox, Saved as APISaved, ThingId};
 use crate::builders::submission::SubmissionSubmitBuilder;
+use crate::models::{ArticleComment, LatestComment, Listing, Saved, Submission};
 use crate::util::{FeedOption, RouxError};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;
+
+type ListSaved = Listing<Saved<AuthedClient>>;
 
 /// A logged in OAuth client to make privileged requests to Reddit's API.
 ///
@@ -36,14 +41,16 @@ impl AuthedClient {
             sr: &'a str,
             #[serde(flatten)]
             data: &'a SubmissionSubmitBuilder,
+            api_type: &'static str,
         }
 
         let req = SubmitRequest {
             sr: subreddit_name,
             data: submission,
+            api_type: "json",
         };
 
-        let parsed: crate::api::response::PostResponse =
+        let parsed: crate::api::response::PostResponse<LazyThingCreatedData> =
             self.0.post_with_response("api/submit", &req).await?;
 
         let mut submissions = self
@@ -111,11 +118,10 @@ impl AuthedClient {
         Ok(self.0.get("message/inbox").await?.json::<Inbox>().await?)
     }
 
-    /// Get saved
     #[maybe_async::maybe_async]
-    pub async fn saved(&self, options: Option<FeedOption>) -> Result<Saved, RouxError> {
+    async fn _saved(&self, ty: &str, options: Option<FeedOption>) -> Result<ListSaved, RouxError> {
         let mut url = EndpointBuilder::new(format!(
-            "user/{}/saved",
+            "user/{}/{ty}",
             self.0.config().username.as_ref().unwrap()
         ));
 
@@ -123,37 +129,33 @@ impl AuthedClient {
             options.build_url(&mut url);
         }
 
-        self.0.get_json(url).await
+        let response: APISaved = self.0.get_json(url).await?;
+        let conv = Listing::new(response, |data| match data {
+            SavedData::Comment(comment) => {
+                Saved::Comment(LatestComment::new(self.clone(), comment))
+            }
+            SavedData::Submission(post) => Saved::Submission(Submission::new(self.clone(), post)),
+        });
+
+        Ok(conv)
+    }
+
+    /// Get saved
+    #[maybe_async::maybe_async]
+    pub async fn saved(&self, options: Option<FeedOption>) -> Result<ListSaved, RouxError> {
+        self._saved("saved", options).await
     }
 
     /// Get upvoted
     #[maybe_async::maybe_async]
-    pub async fn upvoted(&self, options: Option<FeedOption>) -> Result<Saved, RouxError> {
-        let mut url = EndpointBuilder::new(format!(
-            "user/{}/upvoted",
-            self.0.config().username.as_ref().unwrap()
-        ));
-
-        if let Some(options) = options {
-            options.build_url(&mut url);
-        }
-
-        self.0.get_json(url).await
+    pub async fn upvoted(&self, options: Option<FeedOption>) -> Result<ListSaved, RouxError> {
+        self._saved("upvoted", options).await
     }
 
     /// Get downvoted
     #[maybe_async::maybe_async]
-    pub async fn downvoted(&self, options: Option<FeedOption>) -> Result<Saved, RouxError> {
-        let mut url = EndpointBuilder::new(format!(
-            "user/{}/downvoted",
-            self.0.config().username.as_ref().unwrap()
-        ));
-
-        if let Some(options) = options {
-            options.build_url(&mut url);
-        }
-
-        self.0.get_json(url).await
+    pub async fn downvoted(&self, options: Option<FeedOption>) -> Result<ListSaved, RouxError> {
+        self._saved("downvoted", options).await
     }
 
     /// Get users unread messages
@@ -176,9 +178,42 @@ impl AuthedClient {
         self.0.post("api/unread_message", &form).await
     }
 
+    /// Comment
+    #[maybe_async::maybe_async]
+    pub async fn comment(
+        &self,
+        text: &str,
+        parent: &ThingId,
+    ) -> Result<ArticleComment<Self>, RouxError> {
+        let form = [
+            ("api_type", "json"),
+            ("text", text),
+            ("parent", parent.full()),
+        ];
+
+        let response: PostResponse<MultipleBasicThingsData<ArticleCommentData>> =
+            self.0.post_with_response("api/comment", &form).await?;
+
+        Ok(ArticleComment::new(
+            self.clone(),
+            response.json.data.unwrap().assume_single(),
+        ))
+    }
+
+    /// Edit a 'thing'
+    #[maybe_async::maybe_async]
+    pub async fn edit(
+        &self,
+        text: &str,
+        parent: &ThingId,
+    ) -> Result<super::req::Response, RouxError> {
+        let form = [("text", text), ("thing_id", parent.full())];
+        self.0.post("api/editusertext", &form).await
+    }
+
     /// Get submissions by id
     #[maybe_async::maybe_async]
-    pub async fn get_submissions(&self, ids: &[&ThingId]) -> Result<Submissions, RouxError> {
+    pub async fn get_submissions(&self, ids: &[&ThingId]) -> Result<APISubmissions, RouxError> {
         let mut ids = ids.iter().map(|id| id.full());
         let mut url = format!("by_id/");
         url.push_str(ids.next().unwrap());

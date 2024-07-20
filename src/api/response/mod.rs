@@ -31,21 +31,35 @@ pub struct Listing<T> {
     pub children: Vec<T>,
 }
 
+/// Note that `api_type=json` must be passed as a form param to get this as the response.
+/// Otherwise you get weird jQuery stuff.
 #[derive(Deserialize, Debug)]
-pub(crate) struct PostResponse {
-    pub json: PostResponseInner,
+pub(crate) struct PostResponse<T> {
+    pub json: PostResponseInner<T>,
 }
 
 #[derive(Deserialize, Debug)]
-pub(crate) struct PostResponseInner {
-    pub data: Option<PostResponseData>,
+pub(crate) struct PostResponseInner<T> {
+    pub data: Option<T>,
 }
 
+/// A response for something that has been created, but without its actual data.
 #[derive(Deserialize, Debug)]
-pub(crate) struct PostResponseData {
+pub(crate) struct LazyThingCreatedData {
     #[allow(unused)]
     pub id: String,
     pub name: ThingId,
+}
+
+#[derive(Deserialize, Debug)]
+pub(crate) struct MultipleBasicThingsData<T> {
+    pub things: Vec<BasicThing<T>>,
+}
+
+impl<T> MultipleBasicThingsData<T> {
+    pub fn assume_single(self) -> T {
+        self.things.into_iter().next().unwrap().data
+    }
 }
 
 /// Often times a basic thing will have this structure.

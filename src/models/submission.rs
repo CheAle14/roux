@@ -10,10 +10,13 @@ use crate::{
         },
         ThingId,
     },
-    client::{req::Response, RedditClient},
-    models::Comment,
+    client::RedditClient,
     RouxError,
 };
+
+use super::{ArticleComment, Listing};
+
+pub(crate) type Submissions<T> = Listing<Submission<T>>;
 
 /// A Submission in a subreddit.
 pub struct Submission<T> {
@@ -53,8 +56,8 @@ impl<T> Submission<T> {
     }
     /// This is `Some(true)` if the logged-in user has upvoted this submission, `Some(false)` if
     /// the user has downvoted this submission or `None` if the user has not voted.
-    pub fn likes(&self) -> &Option<bool> {
-        &self.data.likes
+    pub fn likes(&self) -> Option<bool> {
+        self.data.likes.clone()
     }
     /// If a specific sort method is suggested, this is set to the string name of it, otherwise
     /// it is `None`.
@@ -80,17 +83,17 @@ impl<T> Submission<T> {
     }
     // skipped from_kind
     /// The amount of times that a user has been gilded (gifted Reddit Gold).
-    pub fn gilded(&self) -> &u64 {
-        &self.data.gilded
+    pub fn gilded(&self) -> u64 {
+        self.data.gilded
     }
     /// This is `true` if Reddit has archived the submission (usually done after 6 months).
     /// Archived submissions cannot be voted or commented upon.
-    pub fn archived(&self) -> &bool {
-        &self.data.archived
+    pub fn archived(&self) -> bool {
+        self.data.archived
     }
     /// This is `true` if the logged-in user has already followed this link, otherwise `false`.
-    pub fn clicked(&self) -> &bool {
-        &self.data.clicked
+    pub fn clicked(&self) -> bool {
+        self.data.clicked
     }
     // skipped report_reasons
     /// The name of the author of the submission (not including the leading `/u/`)
@@ -101,8 +104,8 @@ impl<T> Submission<T> {
     /// The overall points score of this post, as shown on the upvote counter. This is the
     /// same as upvotes - downvotes (however, this figure may be fuzzed by Reddit, and may not
     /// be exact)
-    pub fn score(&self) -> &f64 {
-        &self.data.score
+    pub fn score(&self) -> f64 {
+        self.data.score
     }
     /// This contains the name of the user who approved this submission. This is `None` unless
     /// you are a mod of the subreddit **and** a user has approved this post.
@@ -110,24 +113,24 @@ impl<T> Submission<T> {
         &self.data.approved_by
     }
     /// This is `true` if the 'nsfw' option has been selected for this submission.
-    pub fn over_18(&self) -> &bool {
-        &self.data.over_18
+    pub fn over_18(&self) -> bool {
+        self.data.over_18
     }
     /// This is `true` if the 'spoiler' option has been selected for this submission.
-    pub fn spoiler(&self) -> &bool {
-        &self.data.spoiler
+    pub fn spoiler(&self) -> bool {
+        self.data.spoiler
     }
     /// This is `true` if the logged-in user has clicked 'hide' on this post.
-    pub fn hidden(&self) -> &bool {
-        &self.data.hidden
+    pub fn hidden(&self) -> bool {
+        self.data.hidden
     }
     /// Object with different sizes of the preview image.
     pub fn preview(&self) -> &Option<SubmissionDataPreview> {
         &self.data.preview
     }
     /// The number of comment replies to this submission.
-    pub fn num_comments(&self) -> &u64 {
-        &self.data.num_comments
+    pub fn num_comments(&self) -> u64 {
+        self.data.num_comments
     }
     /// The URL to the link thumbnail. This is "self" if this is a self post, or "default" if
     /// a thumbnail is not available.
@@ -139,8 +142,8 @@ impl<T> Submission<T> {
         &self.data.subreddit_id
     }
     /// This is `true` if the score is being hidden.
-    pub fn hide_score(&self) -> &bool {
-        &self.data.hide_score
+    pub fn hide_score(&self) -> bool {
+        self.data.hide_score
     }
     /// This is `false` if the submission is not edited and is the edit timestamp if it is edited.
     /// Access through the functions of `Submission` instead.
@@ -157,21 +160,21 @@ impl<T> Submission<T> {
         &self.data.author_flair_css_class
     }
     /// The number of downvotes (fuzzed; see `score` for further explanation)
-    pub fn downs(&self) -> &f64 {
-        &self.data.downs
+    pub fn downs(&self) -> f64 {
+        self.data.downs
     }
     /// The number of upvotes (fuzzed; see `score` for further explanation)
-    pub fn ups(&self) -> &f64 {
-        &self.data.ups
+    pub fn ups(&self) -> f64 {
+        self.data.ups
     }
     /// The ratio of upvotes to total votes. Equal to upvotes/(upvotes+downvotes) (fuzzed; see `score` for further explanation)
-    pub fn upvote_ratio(&self) -> &f64 {
-        &self.data.upvote_ratio
+    pub fn upvote_ratio(&self) -> f64 {
+        self.data.upvote_ratio
     }
     // TODO: skipped secure_media_embed
     /// True if the logged-in user has saved this submission.
-    pub fn saved(&self) -> &bool {
-        &self.data.saved
+    pub fn saved(&self) -> bool {
+        self.data.saved
     }
     /// The reason for the post removal, if you are a moderator **and** this post has been
     /// removed.
@@ -180,22 +183,22 @@ impl<T> Submission<T> {
     }
     // TODO: skipped post_hint
     /// This is `true` if this submission is stickied (an 'annoucement' thread)
-    pub fn stickied(&self) -> &bool {
-        &self.data.stickied
+    pub fn stickied(&self) -> bool {
+        self.data.stickied
     }
     // TODO: skipped from
     /// This is `true` if this is a self post.
-    pub fn is_self(&self) -> &bool {
-        &self.data.is_self
+    pub fn is_self(&self) -> bool {
+        self.data.is_self
     }
 
     /// This is `true` if this is a gallery post.
-    pub fn is_gallery(&self) -> &bool {
-        &self.data.is_gallery
+    pub fn is_gallery(&self) -> bool {
+        self.data.is_gallery
     }
     /// This is `true` if this is a video, the `url` would then be to a video.
-    pub fn is_video(&self) -> &bool {
-        &self.data.is_video
+    pub fn is_video(&self) -> bool {
+        self.data.is_video
     }
     // TODO: skipped from_id
     /// The permanent, long link for this submission.
@@ -204,8 +207,8 @@ impl<T> Submission<T> {
     }
     /// This is `true` if the submission has been locked by a moderator, and no replies can be
     /// made.
-    pub fn locked(&self) -> &bool {
-        &self.data.locked
+    pub fn locked(&self) -> bool {
+        self.data.locked
     }
     /// The full 'Thing ID', consisting of a 'kind' and a base-36 identifier. The valid kinds are:
     /// - t1_ - Comment
@@ -220,8 +223,8 @@ impl<T> Submission<T> {
     }
     /// A timestamp of the time when the post was created, in the logged-in user's **local**
     /// time.
-    pub fn created(&self) -> &f64 {
-        &self.data.created
+    pub fn created(&self) -> f64 {
+        self.data.created
     }
     /// The linked URL, if this is a link post.
     pub fn url(&self) -> &Option<String> {
@@ -233,24 +236,24 @@ impl<T> Submission<T> {
         &self.data.author_flair_text
     }
     /// This is `true` if the post is from a quarantined subreddit.
-    pub fn quarantine(&self) -> &bool {
-        &self.data.quarantine
+    pub fn quarantine(&self) -> bool {
+        self.data.quarantine
     }
     /// The title of the post.
     pub fn title(&self) -> &String {
         &self.data.title
     }
     /// A timestamp of the time when the post was created, in **UTC**.
-    pub fn created_utc(&self) -> &f64 {
-        &self.data.created_utc
+    pub fn created_utc(&self) -> f64 {
+        self.data.created_utc
     }
     /// Distinguished
     pub fn distinguished(&self) -> &Option<String> {
         &self.data.distinguished
     }
     /// This is `true` if the user has visited this link.
-    pub fn visited(&self) -> &bool {
-        &self.data.visited
+    pub fn visited(&self) -> bool {
+        self.data.visited
     }
     /// The number of reports, if the user is a moderator of this subreddit.
     pub fn num_reports(&self) -> &Option<u64> {
@@ -269,8 +272,8 @@ impl<T> Submission<T> {
 impl Submission<crate::client::AuthedClient> {
     /// Reports this submission with a custom reason
     #[maybe_async::maybe_async]
-    pub async fn report(&self, id: &ThingId, reason: &str) -> Result<(), RouxError> {
-        let form = [("id", id.full()), ("reason", reason)];
+    pub async fn report(&self, reason: &str) -> Result<(), RouxError> {
+        let form = [("id", self.data.name.full()), ("reason", reason)];
         self.client.post("api/report", &form).await?;
         Ok(())
     }
@@ -280,11 +283,8 @@ impl Submission<crate::client::AuthedClient> {
     pub async fn comment(
         &self,
         text: &str,
-    ) -> Result<Comment<crate::client::AuthedClient>, RouxError> {
-        let form = [("text", text), ("parent", self.data.name.full())];
-        let response = self.client.post("api/comment", &form).await?;
-        let text = response.text().await?;
-        panic!("Comment: {text}");
+    ) -> Result<ArticleComment<crate::client::AuthedClient>, RouxError> {
+        self.client.comment(text, &self.data.name).await
     }
 
     /// Sets the [`Submission::selftext`]

@@ -27,9 +27,12 @@
 
 extern crate serde_json;
 
+use crate::models::comment::LatestComments;
+use crate::models::submission::Submissions;
+use crate::models::{LatestComment, Listing, Submission};
 use crate::util::{FeedOption, RouxError};
 
-use crate::api::{About, Comments, Overview, Submissions};
+use crate::api::{APILatestComments, APISubmissions, About, Overview};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;
@@ -41,7 +44,7 @@ pub struct User<T> {
     client: T,
 }
 
-impl<T: RedditClient> User<T> {
+impl<T: RedditClient + Clone> User<T> {
     /// Create a new `User` instance.
     pub fn new(user: &str, client: T) -> User<T> {
         User {
@@ -64,26 +67,41 @@ impl<T: RedditClient> User<T> {
 
     /// Get user's submitted posts.
     #[maybe_async::maybe_async]
-    pub async fn submitted(&self, options: Option<FeedOption>) -> Result<Submissions, RouxError> {
+    pub async fn submitted(
+        &self,
+        options: Option<FeedOption>,
+    ) -> Result<Submissions<T>, RouxError> {
         let mut url = EndpointBuilder::from(format!("user/{}/submitted", self.user));
 
         if let Some(options) = options {
             options.build_url(&mut url);
         }
 
-        self.client.get_json(url).await
+        let submissions: APISubmissions = self.client.get_json(url).await?;
+
+        let conv = Listing::new(submissions, |data| {
+            Submission::new(self.client.clone(), data)
+        });
+
+        Ok(conv)
     }
 
     /// Get user's submitted comments.
     #[maybe_async::maybe_async]
-    pub async fn comments(&self, options: Option<FeedOption>) -> Result<Comments, RouxError> {
+    pub async fn comments(
+        &self,
+        options: Option<FeedOption>,
+    ) -> Result<LatestComments<T>, RouxError> {
         let mut url = EndpointBuilder::from(format!("user/{}/comments", self.user));
 
         if let Some(options) = options {
             options.build_url(&mut url);
         }
 
-        self.client.get_json(url).await
+        let api: APILatestComments = self.client.get_json(url).await?;
+
+        let conv = Listing::new(api, |data| LatestComment::new(self.client.clone(), data));
+        Ok(conv)
     }
 
     /// Get user's about page
@@ -126,7 +144,7 @@ mod tests {
         let about = user.about(None).await.unwrap();
 
         // Test feed options
-        let after = comments.data.after.unwrap();
+        let after = comments.after.unwrap();
         let after_options = FeedOption::new().after(&after.full());
         let next_comments = user.comments(Some(after_options)).await.unwrap();
     }

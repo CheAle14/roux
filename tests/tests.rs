@@ -8,8 +8,8 @@ extern crate tokio;
 mod tests {
     use std::env;
 
-    use roux::api::saved::SavedData;
     use roux::client::{OAuthClient, RedditClient};
+    use roux::models::Saved;
     use roux::util::FeedOption;
     use roux::Config;
     #[cfg(not(feature = "blocking"))]
@@ -42,23 +42,23 @@ mod tests {
         let options = FeedOption::new().limit(5);
 
         let saved1 = me.saved(None).await.unwrap();
-        let last_child_id1 = match &saved1.data.children.last().unwrap().data {
-            SavedData::Comment(comments_data) => comments_data.id.as_ref().unwrap(),
-            SavedData::Submission(submissions_data) => &submissions_data.id,
+        let last_child_id1 = match &saved1.children.last().unwrap() {
+            Saved::Comment(comment) => comment.id(),
+            Saved::Submission(post) => post.id(),
         };
 
         let saved2 = me
-            .saved(Some(options.after(&saved1.data.after.unwrap().full())))
+            .saved(Some(options.after(&saved1.after.unwrap().full())))
             .await
             .unwrap();
 
-        let last_child_id2 = match &saved2.data.children.last().unwrap().data {
-            SavedData::Comment(comments_data) => comments_data.id.as_ref().unwrap(),
-            SavedData::Submission(submissions_data) => &submissions_data.id,
+        let last_child_id2 = match &saved2.children.last().unwrap() {
+            Saved::Comment(comments_data) => comments_data.id(),
+            Saved::Submission(submissions_data) => &submissions_data.id(),
         };
 
         assert_ne!(last_child_id1, last_child_id2);
-        assert_eq!(saved2.data.children.len(), 5);
+        assert_eq!(saved2.children.len(), 5);
 
         let sub = me.subreddit("astolfo");
 

@@ -249,4 +249,4 @@ pub struct SubmissionDataMediaMetadataValue {
 }
 
 /// Submissions
-pub type Submissions = BasicListing<SubmissionData>;
+pub type APISubmissions = BasicListing<SubmissionData>;

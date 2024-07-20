@@ -1,5 +1,5 @@
 pub mod about;
-pub mod comment;
+pub(crate) mod comment;
 pub mod friend;
 pub mod inbox;
 pub mod me;
@@ -13,7 +13,7 @@ pub mod subreddit;
 pub mod thing_id;
 
 pub use about::About;
-pub use comment::Comments;
+pub use comment::{APIArticleComments, APILatestComments};
 pub use friend::Friend;
 pub use inbox::Inbox;
 pub use me::MeData;
@@ -21,6 +21,6 @@ pub use moderator::Moderators;
 pub use overview::Overview;
 pub use reply::{MaybeReplies, Replies};
 pub use saved::Saved;
-pub use submission::Submissions;
+pub use submission::APISubmissions;
 pub use subreddit::SubredditData;
 pub use thing_id::ThingId;

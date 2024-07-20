@@ -1,8 +1,15 @@
 mod listing;
 pub use listing::*;
+// pub fn $1(&self) -> &$2 { &self.data.$1 }
 
-mod submission;
-pub use submission::*;
+pub(crate) mod listing;
+pub use listing::Listing;
 
-mod comment;
-pub use comment::*;
+pub(crate) mod submission;
+pub use submission::Submission;
+
+pub(crate) mod saved;
+pub use saved::Saved;
+
+pub(crate) mod comment;
+pub use comment::{ArticleComment, LatestComment};
