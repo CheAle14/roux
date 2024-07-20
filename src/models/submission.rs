@@ -10,6 +10,7 @@ use crate::{
         },
         ThingId,
     },
+    builders::form::FormBuilder,
     client::RedditClient,
     RouxError,
 };
@@ -273,7 +274,10 @@ impl Submission<crate::client::AuthedClient> {
     /// Reports this submission with a custom reason
     #[maybe_async::maybe_async]
     pub async fn report(&self, reason: &str) -> Result<(), RouxError> {
-        let form = [("id", self.data.name.full()), ("reason", reason)];
+        let form = FormBuilder::new()
+            .with("id", self.name().full())
+            .with("reason", reason);
+
         self.client.post("api/report", &form).await?;
         Ok(())
     }
@@ -290,8 +294,7 @@ impl Submission<crate::client::AuthedClient> {
     /// Sets the [`Submission::selftext`]
     #[maybe_async::maybe_async]
     pub async fn edit(&mut self, text: &str) -> Result<(), RouxError> {
-        let form = [("text", text), ("thing_id", self.data.name.full())];
-        self.client.post("api/editusertext", &form).await?;
+        self.client.edit(text, self.name()).await?;
         self.data.selftext = text.to_owned();
         Ok(())
     }

@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Duration};
 
-use crate::client::endpoint::EndpointBuilder;
 use crate::client::traits::RedditClient;
+use crate::{builders::form::FormBuilder, client::endpoint::EndpointBuilder};
 use reqwest::{header, Method, StatusCode};
 use serde::{Deserialize, Serialize};
 
@@ -139,7 +139,10 @@ impl OAuthClient {
     }
 
     #[maybe_async::maybe_async]
-    async fn execute(&self, request: Request) -> Result<Response, crate::util::RouxError> {
+    pub(crate) async fn execute(
+        &self,
+        request: Request,
+    ) -> Result<Response, crate::util::RouxError> {
         let response = self.inner.inner.execute(request).await?;
         if let Err(e) = response.error_for_status_ref() {
             let status = e.status().unwrap_or(StatusCode::BAD_REQUEST);
@@ -180,10 +183,10 @@ impl RedditClient for OAuthClient {
     }
 
     #[maybe_async::maybe_async]
-    async fn post<T: Serialize>(
+    async fn post(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &T,
+        form: &FormBuilder<'_>,
     ) -> Result<Response, RouxError> {
         let r = self.request(Method::POST, endpoint).form(form).build()?;
 

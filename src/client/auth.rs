@@ -6,6 +6,7 @@ use crate::api::me::MeData;
 use crate::api::response::{LazyThingCreatedData, MultipleBasicThingsData, PostResponse};
 use crate::api::saved::SavedData;
 use crate::api::{APISubmissions, Friend, Inbox, Saved as APISaved, ThingId};
+use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::models::{ArticleComment, CreatedComment, LatestComment, Listing, Saved, Submission};
 use crate::util::{FeedOption, RouxError};
@@ -51,8 +52,14 @@ impl AuthedClient {
             api_type: "json",
         };
 
+        let req = self
+            .0
+            .request(reqwest::Method::POST, "api/submit")
+            .form(&req)
+            .build()?;
+
         let parsed: crate::api::response::PostResponse<LazyThingCreatedData> =
-            self.0.post_with_response("api/submit", &req).await?;
+            self.0.execute(req).await?.json().await?;
 
         let mut submissions = self
             .get_submissions(&[&parsed.json.data.unwrap().name])
@@ -70,7 +77,7 @@ impl AuthedClient {
         typ: &str,
         sub: &str,
     ) -> Result<bool, RouxError> {
-        let form = [("name", username), ("type", typ)];
+        let form = FormBuilder::new().with("name", username).with("type", typ);
         let resp: Friend = self
             .0
             .post_with_response(format!("r/{}/api/friend", sub).as_str(), &form)
@@ -87,7 +94,7 @@ impl AuthedClient {
         typ: &str,
         sub: &str,
     ) -> Result<bool, RouxError> {
-        let form = [("name", username), ("type", typ)];
+        let form = FormBuilder::new().with("name", username).with("type", typ);
         let resp: Friend = self
             .0
             .post_with_response(format!("r/{}/api/unfriend", sub).as_str(), &form)
@@ -103,12 +110,10 @@ impl AuthedClient {
         subject: &str,
         body: &str,
     ) -> Result<super::req::Response, RouxError> {
-        let form = [
-            ("api_type", "json"),
-            ("subject", subject),
-            ("text", body),
-            ("to", username),
-        ];
+        let form = FormBuilder::new()
+            .with("subject", subject)
+            .with("text", body)
+            .with("to", username);
 
         self.0.post("api/compose", &form).await
     }
@@ -165,17 +170,17 @@ impl AuthedClient {
         self.0.get_json("message/unread").await
     }
 
-    /// Mark messages as read
+    /// Mark message as read
     #[maybe_async::maybe_async]
     pub async fn mark_read(&self, ids: &ThingId) -> Result<super::req::Response, RouxError> {
-        let form = [("id", ids.full())];
+        let form = FormBuilder::new().with("id", ids.full());
         self.0.post("api/read_message", &form).await
     }
 
-    /// Mark messages as unread
+    /// Mark message as unread
     #[maybe_async::maybe_async]
-    pub async fn mark_unread(&self, ids: &str) -> Result<super::req::Response, RouxError> {
-        let form = [("id", ids)];
+    pub async fn mark_unread(&self, ids: &ThingId) -> Result<super::req::Response, RouxError> {
+        let form = FormBuilder::new().with("id", ids.full());
         self.0.post("api/unread_message", &form).await
     }
 
@@ -185,13 +190,11 @@ impl AuthedClient {
         &self,
         text: &str,
         parent: &ThingId,
-        let form = [
-            ("api_type", "json"),
-            ("text", text),
-            ("parent", parent.full()),
-        ];
-
     ) -> Result<CreatedComment<Self>, RouxError> {
+        let form = FormBuilder::new()
+            .with("text", text)
+            .with("parent", parent.full());
+
         let response: PostResponse<MultipleBasicThingsData<CreatedCommentData>> =
             self.0.post_with_response("api/comment", &form).await?;
 
@@ -208,7 +211,9 @@ impl AuthedClient {
         text: &str,
         parent: &ThingId,
     ) -> Result<super::req::Response, RouxError> {
-        let form = [("text", text), ("thing_id", parent.full())];
+        let form = FormBuilder::new()
+            .with("text", text)
+            .with("thing_id", parent.full());
         self.0.post("api/editusertext", &form).await
     }
 
@@ -266,10 +271,10 @@ impl RedditClient for AuthedClient {
 
     #[inline(always)]
     #[maybe_async::maybe_async]
-    async fn post<T: Serialize>(
+    async fn post(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &T,
+        form: &FormBuilder<'_>,
     ) -> Result<super::req::Response, RouxError> {
         self.0.post(endpoint, form).await
     }

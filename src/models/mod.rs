@@ -1,5 +1,4 @@
-mod listing;
-pub use listing::*;
+// pub ([\w_]+): ([\w<>, ]+),
 // pub fn $1(&self) -> &$2 { &self.data.$1 }
 
 pub(crate) mod listing;

@@ -1,6 +1,7 @@
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use crate::builders::form::FormBuilder;
 use crate::util::RouxError;
 
 use super::endpoint::EndpointBuilder;
@@ -26,17 +27,17 @@ pub trait RedditClient {
     }
 
     /// Post the data to the endpoint.
-    async fn post<T: Serialize>(
+    async fn post(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &T,
+        form: &FormBuilder<'_>,
     ) -> Result<Response, RouxError>;
 
     /// Post the data, parsing the response as JSON.
-    async fn post_with_response<TReq: Serialize, TResp: DeserializeOwned>(
+    async fn post_with_response<TResp: DeserializeOwned>(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &TReq,
+        form: &FormBuilder<'_>,
     ) -> Result<TResp, RouxError> {
         let response = self.post(endpoint, form).await?;
         Ok(response.json().await?)
@@ -84,17 +85,17 @@ pub trait RedditClient {
     }
 
     /// Post the data to the endpoint.
-    fn post<T: Serialize>(
+    fn post(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &T,
+        form: &FormBuilder<'_>,
     ) -> Result<Response, RouxError>;
 
     /// Post the data, parsing the response as JSON.
-    fn post_with_response<TReq: Serialize, TResp: DeserializeOwned>(
+    fn post_with_response<TResp: DeserializeOwned>(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &TReq,
+        form: &FormBuilder<'_>,
     ) -> Result<TResp, RouxError> {
         let response = self.post(endpoint, form)?;
         Ok(response.json()?)

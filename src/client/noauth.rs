@@ -1,4 +1,4 @@
-use crate::util::RouxError;
+use crate::{builders::form::FormBuilder, util::RouxError};
 
 use super::{endpoint::EndpointBuilder, req, traits::RedditClient};
 use reqwest::header;
@@ -44,10 +44,10 @@ impl RedditClient for UnauthedClient {
     }
 
     #[maybe_async::maybe_async]
-    async fn post<T: serde::Serialize>(
+    async fn post(
         &self,
         endpoint: impl Into<super::endpoint::EndpointBuilder>,
-        form: &T,
+        form: &FormBuilder<'_>,
     ) -> Result<super::req::Response, RouxError> {
         let endpoint: EndpointBuilder = endpoint.into();
         let endpoint = endpoint.build("https://www.reddit.com");

@@ -5,6 +5,7 @@ use crate::{
         },
         MaybeReplies, ThingId,
     },
+    builders::form::FormBuilder,
     client::{AuthedClient, RedditClient},
     util::RouxError,
 };
@@ -401,7 +402,9 @@ macro_rules! impl_comment {
             /// Reports this comment with a custom reason
             #[maybe_async::maybe_async]
             pub async fn report(&self, reason: &str) -> Result<(), RouxError> {
-                let form = [("id", self.data.common.name.full()), ("reason", reason)];
+                let form = FormBuilder::new()
+                    .with("id", self.name().full())
+                    .with("reason", reason);
                 self.client.post("api/report", &form).await?;
                 Ok(())
             }
