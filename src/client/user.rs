@@ -79,9 +79,7 @@ impl<T: RedditClient + Clone> User<T> {
 
         let submissions: APISubmissions = self.client.get_json(url).await?;
 
-        let conv = Listing::new(submissions, |data| {
-            Submission::new(self.client.clone(), data)
-        });
+        let conv = Listing::new(submissions, self.client.clone());
 
         Ok(conv)
     }
@@ -100,7 +98,7 @@ impl<T: RedditClient + Clone> User<T> {
 
         let api: APILatestComments = self.client.get_json(url).await?;
 
-        let conv = Listing::new(api, |data| LatestComment::new(self.client.clone(), data));
+        let conv = Listing::new(api, self.client.clone());
         Ok(conv)
     }
 

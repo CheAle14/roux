@@ -1,5 +1,7 @@
 use crate::api::{response::BasicListing, response::Listing as APIListing, ThingId};
 
+use super::FromClientAndData;
+
 /// Represents a view of a list of some thing `T`.
 pub struct Listing<T> {
     /// The full name of the thing which comes before this view.
@@ -15,7 +17,7 @@ pub struct Listing<T> {
 }
 
 impl<TModel> Listing<TModel> {
-    pub(crate) fn new<TApi, F>(listing: BasicListing<TApi>, convertor: F) -> Self
+    pub(crate) fn new_converter<TApi, F>(listing: BasicListing<TApi>, convertor: F) -> Self
     where
         F: Fn(TApi) -> TModel,
     {
@@ -39,6 +41,14 @@ impl<TModel> Listing<TModel> {
             dist,
             modhash,
         }
+    }
+
+    pub(crate) fn new<TApi, TClient>(listing: BasicListing<TApi>, client: TClient) -> Self
+    where
+        TClient: Clone,
+        TModel: FromClientAndData<TClient, TApi>,
+    {
+        Self::new_converter(listing, |data| TModel::new(client.clone(), data))
     }
 }
 

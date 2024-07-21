@@ -26,11 +26,6 @@ macro_rules! impl_comment {
         }
 
         impl<T> $name<T> {
-            /// Create a new comment with the provided client and data.
-            pub fn new(client: T, data: $data_name) -> Self {
-                Self { client, data }
-            }
-
             /// ??
             pub fn all_awardings(&self) -> &Vec<Value> {
                 &self.data.common.all_awardings
@@ -395,6 +390,12 @@ macro_rules! impl_comment {
             /// ??
             pub fn user_reports(&self) -> &Vec<Value> {
                 &self.data.common.user_reports
+            }
+        }
+
+        impl<T> crate::models::FromClientAndData<T, $data_name> for $name<T> {
+            fn new(client: T, data: $data_name) -> Self {
+                Self { client, data }
             }
         }
 

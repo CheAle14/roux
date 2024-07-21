@@ -15,7 +15,7 @@ use crate::{
     RouxError,
 };
 
-use super::{comment::ArticleComments, CreatedComment, Listing};
+use super::{comment::ArticleComments, CreatedComment, FromClientAndData, Listing};
 
 pub(crate) type Submissions<T> = Listing<Submission<T>>;
 
@@ -26,11 +26,6 @@ pub struct Submission<T> {
 }
 
 impl<T> Submission<T> {
-    /// Creates a new submission
-    pub fn new(client: T, data: SubmissionData) -> Self {
-        Self { client, data }
-    }
-
     /// The domain of the link (if link post) or self.subreddit (if self post).
     /// Domains do not include a protocol, e.g. `i.redd.it` or `self.learnprogramming`
     pub fn domain(&self) -> &Option<String> {
@@ -311,5 +306,11 @@ impl Submission<crate::client::AuthedClient> {
         self.client.edit(text, self.name()).await?;
         self.data.selftext = text.to_owned();
         Ok(())
+    }
+}
+
+impl<T> FromClientAndData<T, SubmissionData> for Submission<T> {
+    fn new(client: T, data: SubmissionData) -> Self {
+        Self { client, data }
     }
 }

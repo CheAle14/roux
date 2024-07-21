@@ -7,7 +7,7 @@ use crate::api::saved::SavedData;
 use crate::api::{APISubmissions, Friend, Inbox, Saved as APISaved, ThingId};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
-use crate::models::{CreatedComment, LatestComment, Listing, Saved, Submission};
+use crate::models::{CreatedComment, FromClientAndData, LatestComment, Listing, Saved, Submission};
 use crate::util::{FeedOption, RouxError};
 
 use super::endpoint::EndpointBuilder;
@@ -135,12 +135,7 @@ impl AuthedClient {
         }
 
         let response: APISaved = self.0.get_json(url).await?;
-        let conv = Listing::new(response, |data| match data {
-            SavedData::Comment(comment) => {
-                Saved::Comment(LatestComment::new(self.clone(), comment))
-            }
-            SavedData::Submission(post) => Saved::Submission(Submission::new(self.clone(), post)),
-        });
+        let conv = Listing::new(response, self.clone());
 
         Ok(conv)
     }

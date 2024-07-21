@@ -142,7 +142,7 @@ impl<T: RedditClient + Clone> Subreddit<T> {
         }
 
         let api: crate::api::APISubmissions = self.client.get_json(endpoint).await?;
-        let listing = Listing::new(api, |api| Submission::new(self.client.clone(), api));
+        let listing = Listing::new(api, self.client.clone());
 
         Ok(listing)
     }
@@ -190,7 +190,7 @@ impl<T: RedditClient + Clone> Subreddit<T> {
 
         let api: APIListing<LatestCommentData> = self.client.get_json(endpoint).await?;
 
-        let conv = Listing::new(api, |data| LatestComment::new(self.client.clone(), data));
+        let conv = Listing::new(api, self.client.clone());
         Ok(conv)
     }
 

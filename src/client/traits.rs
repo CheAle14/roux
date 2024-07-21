@@ -97,9 +97,7 @@ pub trait RedditClient {
         let comments: crate::api::comment::ArticleCommentsResponse =
             self.get_json(endpoint).await?;
 
-        let conv = Listing::new(comments.comments, |data| {
-            ArticleComment::new(self.clone(), data)
-        });
+        let conv = Listing::new(comments.comments, self.clone());
 
         Ok(conv)
     }

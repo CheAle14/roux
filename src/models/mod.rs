@@ -12,3 +12,7 @@ pub use saved::Saved;
 
 pub(crate) mod comment;
 pub use comment::{ArticleComment, CreatedComment, LatestComment};
+
+pub(crate) trait FromClientAndData<Client, Data> {
+    fn new(client: Client, data: Data) -> Self;
+}
