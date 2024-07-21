@@ -70,6 +70,7 @@ use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::models::comment::{ArticleComments, LatestComments};
 use crate::models::submission::Submissions;
 use crate::models::{ArticleComment, LatestComment, Listing, Submission};
+use crate::util::url::build_subreddit;
 use crate::util::{FeedOption, RouxError};
 
 use crate::api::response::BasicListing as APIListing;
@@ -117,9 +118,7 @@ impl<T: RedditClient + Clone> Subreddit<T> {
     }
 
     pub(crate) fn endpoint(&self, endpoint: impl Into<EndpointBuilder>) -> EndpointBuilder {
-        let mut endpoint: EndpointBuilder = endpoint.into();
-        endpoint.path = format!("r/{}/{}", self.name, endpoint.path);
-        endpoint
+        build_subreddit(&self.name).join(endpoint)
     }
 
     /// Get subreddit data.
@@ -203,24 +202,9 @@ impl<T: RedditClient + Clone> Subreddit<T> {
         depth: Option<u32>,
         limit: Option<u32>,
     ) -> Result<ArticleComments<T>, RouxError> {
-        let mut endpoint = self.endpoint(format!("comments/{}", article.id()));
-
-        if let Some(depth) = depth {
-            endpoint.with_query("depth", depth.to_string());
-        }
-
-        if let Some(limit) = limit {
-            endpoint.with_query("limit", limit.to_string());
-        }
-
-        let comments: crate::api::comment::ArticleCommentsResponse =
-            self.client.get_json(endpoint).await?;
-
-        let conv = Listing::new(comments.comments, |data| {
-            ArticleComment::new(self.client.clone(), data)
-        });
-
-        Ok(conv)
+        self.client
+            .article_comments(&self.name, article, depth, limit)
+            .await
     }
 }
 

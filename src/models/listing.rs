@@ -41,3 +41,13 @@ impl<TModel> Listing<TModel> {
         }
     }
 }
+
+impl<T> IntoIterator for Listing<T> {
+    type Item = T;
+
+    type IntoIter = <Vec<T> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.children.into_iter()
+    }
+}

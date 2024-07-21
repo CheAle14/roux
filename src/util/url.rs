@@ -1,9 +1,5 @@
-/// Builds a url for read only Reddit access.
-pub fn build_url(dest: &str) -> String {
-    format!("https://www.reddit.com/{}/.json", dest)
-}
+use crate::client::endpoint::EndpointBuilder;
 
-/// Builds a url for OAuth Reddit access.
-pub fn build_oauth(dest: &str) -> String {
-    format!("https://oauth.reddit.com/{}/.json?raw_json=1", dest)
+pub fn build_subreddit(name: &str) -> EndpointBuilder {
+    EndpointBuilder::new(format!("r/{name}/"))
 }

@@ -1,6 +1,10 @@
 use serde::de::DeserializeOwned;
 
+use crate::api::ThingId;
 use crate::builders::form::FormBuilder;
+use crate::models::comment::ArticleComments;
+use crate::models::{ArticleComment, Listing};
+use crate::util::url::build_subreddit;
 use crate::util::RouxError;
 
 use super::endpoint::EndpointBuilder;
@@ -9,10 +13,11 @@ use super::req::Response;
 use super::subreddits::{Subreddit, Subreddits};
 use super::user::User;
 
-/// A generic async client to send and build requests.
+/// A generic client to send and build requests.
 ///
-/// This allows the stateful models to be agnostic as to whether they are Unauthed, OAuth or Authed.
-#[cfg(not(feature = "blocking"))]
+/// This allows the models to share common methods between Unauthed, OAuth or Authed,
+/// as well as to specialize for Authed requests.
+#[maybe_async::maybe_async(AFIT)]
 pub trait RedditClient {
     /// Get the endpoint, returning the raw response or an error.
     async fn get(&self, endpoint: impl Into<EndpointBuilder>) -> Result<Response, RouxError>;
@@ -42,7 +47,7 @@ pub trait RedditClient {
         Ok(response.json().await?)
     }
 
-    /// Creates a stateful user, which can be used to make further requests using this underlying client
+    /// Creates a user helper, which can be used to make further requests using this underlying client
     fn user(&self, name: &str) -> User<Self>
     where
         Self: Sized + Clone,
@@ -50,7 +55,7 @@ pub trait RedditClient {
         User::new(name, self.clone())
     }
 
-    /// Creates a stateful subreddit
+    /// Creates a subreddit helper
     fn subreddit(&self, name: &str) -> Subreddit<Self>
     where
         Self: Sized + Clone,
@@ -58,69 +63,44 @@ pub trait RedditClient {
         Subreddit::new(name, self.clone())
     }
 
-    /// Creates a stateful subreddits, which can be used to search for a subreddit.
+    /// Creates a subreddits helper, which can be used to search for a subreddit.
     fn subreddits(&self) -> Subreddits<Self>
     where
         Self: Sized + Clone,
     {
         Subreddits(self.clone())
     }
-}
 
-/// A generic blocking client to send and build requests.
-///
-/// This allows the stateful models to be agnostic as to whether they are Unauthed, OAuth or Authed.
-#[cfg(feature = "blocking")]
-pub trait RedditClient {
-    /// Get the endpoint, returning the raw response or an error.
-    fn get(&self, endpoint: impl Into<EndpointBuilder>) -> Result<Response, RouxError>;
-
-    /// Get the endpoint, parsing the response into the type.
-    fn get_json<T: DeserializeOwned>(
+    /// Get comments from article.
+    #[maybe_async::maybe_async]
+    async fn article_comments(
         &self,
-        endpoint: impl Into<EndpointBuilder>,
-    ) -> Result<T, RouxError> {
-        Ok(self.get(endpoint)?.json()?)
-    }
-
-    /// Post the data to the endpoint.
-    fn post(
-        &self,
-        endpoint: impl Into<EndpointBuilder>,
-        form: &FormBuilder<'_>,
-    ) -> Result<Response, RouxError>;
-
-    /// Post the data, parsing the response as JSON.
-    fn post_with_response<TResp: DeserializeOwned>(
-        &self,
-        endpoint: impl Into<EndpointBuilder>,
-        form: &FormBuilder<'_>,
-    ) -> Result<TResp, RouxError> {
-        let response = self.post(endpoint, form)?;
-        Ok(response.json()?)
-    }
-
-    /// Creates a stateful user, which can be used to make further requests using this underlying client
-    fn user(&self, name: &str) -> User<Self>
+        subreddit_name: &str,
+        article: &ThingId,
+        depth: Option<u32>,
+        limit: Option<u32>,
+    ) -> Result<ArticleComments<Self>, RouxError>
     where
         Self: Sized + Clone,
     {
-        User::new(name, self.clone())
-    }
+        let mut endpoint =
+            build_subreddit(subreddit_name).join(format!("comments/{}", article.id()));
 
-    /// Creates a stateful subreddit
-    fn subreddit(&self, name: &str) -> Subreddit<Self>
-    where
-        Self: Sized + Clone,
-    {
-        Subreddit::new(name, self.clone())
-    }
+        if let Some(depth) = depth {
+            endpoint.with_query("depth", depth.to_string());
+        }
 
-    /// Creates a stateful subreddits, which can be used to search for a subreddit.
-    fn subreddits(&self) -> Subreddits<Self>
-    where
-        Self: Sized + Clone,
-    {
-        Subreddits(self.clone())
+        if let Some(limit) = limit {
+            endpoint.with_query("limit", limit.to_string());
+        }
+
+        let comments: crate::api::comment::ArticleCommentsResponse =
+            self.get_json(endpoint).await?;
+
+        let conv = Listing::new(comments.comments, |data| {
+            ArticleComment::new(self.clone(), data)
+        });
+
+        Ok(conv)
     }
 }

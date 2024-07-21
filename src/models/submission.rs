@@ -15,7 +15,7 @@ use crate::{
     RouxError,
 };
 
-use super::{CreatedComment, Listing};
+use super::{comment::ArticleComments, CreatedComment, Listing};
 
 pub(crate) type Submissions<T> = Listing<Submission<T>>;
 
@@ -267,6 +267,20 @@ impl<T> Submission<T> {
     /// The media metadata, used by the gallery if it is present.
     pub fn media_metadata(&self) -> &Option<HashMap<String, SubmissionDataMediaMetadata>> {
         &self.data.media_metadata
+    }
+}
+
+impl<T: RedditClient + Clone> Submission<T> {
+    /// Fetches the comments under this submission.
+    #[maybe_async::maybe_async]
+    pub async fn comments(
+        &self,
+        depth: Option<u32>,
+        limit: Option<u32>,
+    ) -> Result<ArticleComments<T>, RouxError> {
+        self.client
+            .article_comments(&self.data.subreddit, self.name(), depth, limit)
+            .await
     }
 }
 

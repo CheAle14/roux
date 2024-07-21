@@ -3,7 +3,7 @@ pub mod defaults;
 /// Error responses.
 pub mod error;
 /// Url building.
-pub mod url;
+pub(crate) mod url;
 pub use error::RouxError;
 /// Options
 pub mod option;

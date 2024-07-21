@@ -14,6 +14,13 @@ impl EndpointBuilder {
         }
     }
 
+    pub fn join(mut self, other: impl Into<EndpointBuilder>) -> Self {
+        let other: EndpointBuilder = other.into();
+        self.path.push_str(&other.path);
+        self.query.extend(other.query.into_iter());
+        self
+    }
+
     pub fn query(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.with_query(key, value);
         self
