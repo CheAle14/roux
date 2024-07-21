@@ -1,13 +1,15 @@
+#[cfg(feature = "blocking")]
 pub(crate) mod req {
-    #[cfg(feature = "blocking")]
     pub use reqwest::blocking::{Client, ClientBuilder, Request, RequestBuilder, Response};
-    #[cfg(feature = "blocking")]
     pub use std::sync::Mutex;
+    pub use std::thread::sleep;
+}
 
-    #[cfg(not(feature = "blocking"))]
+#[cfg(not(feature = "blocking"))]
+pub(crate) mod req {
     pub use reqwest::{Client, ClientBuilder, Request, RequestBuilder, Response};
-    #[cfg(not(feature = "blocking"))]
     pub use tokio::sync::Mutex;
+    pub use tokio::time::sleep;
 }
 
 mod auth;

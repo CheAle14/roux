@@ -24,6 +24,20 @@ pub struct OAuthClient {
     inner: Arc<ClientInner>,
 }
 
+enum ExecuteError {
+    RetryAfter(Duration),
+    RetryExponential,
+    BadRequest(String),
+    OtherResponseError(Response, reqwest::Error),
+    Other(reqwest::Error),
+}
+
+impl From<reqwest::Error> for ExecuteError {
+    fn from(value: reqwest::Error) -> Self {
+        Self::Other(value)
+    }
+}
+
 impl OAuthClient {
     /// Creates a new OAuthClient with the provided config.
     ///
@@ -99,14 +113,14 @@ impl OAuthClient {
         let mut endpoint = EndpointBuilder::new("api/v1/access_token");
         endpoint.with_dot_json = false;
 
-        let request = self
-            .request(Method::POST, endpoint)
-            .basic_auth(
-                &self.inner.config.client_id,
-                Some(&self.inner.config.client_secret),
-            )
-            .form(&login)
-            .build()?;
+        let request = || {
+            self.request(Method::POST, &endpoint)
+                .basic_auth(
+                    &self.inner.config.client_id,
+                    Some(&self.inner.config.client_secret),
+                )
+                .form(&login)
+        };
 
         let response = self.execute(request).await?;
 
@@ -130,22 +144,14 @@ impl OAuthClient {
         }
     }
 
-    pub(crate) fn request(
-        &self,
-        method: Method,
-        endpoint: impl Into<EndpointBuilder>,
-    ) -> RequestBuilder {
-        let endpoint = endpoint.into();
+    pub(crate) fn request(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
         let url = endpoint.build(&self.inner.base_url);
-        println!("{method:?} {url}");
+        println!("[roux] {method:?} {url}");
         self.inner.inner.request(method, url)
     }
 
     #[cfg(feature = "blocking")]
-    pub(crate) fn with_ratelimits(
-        &self,
-        request: Request,
-    ) -> Result<Response, crate::util::RouxError> {
+    pub(crate) fn with_ratelimits(&self, request: Request) -> Result<Response, reqwest::Error> {
         let mut lock = self.inner.ratelimit.lock().unwrap();
         lock.delay();
         let response = self.inner.inner.execute(request)?;
@@ -156,7 +162,7 @@ impl OAuthClient {
     pub(crate) async fn with_ratelimits(
         &self,
         request: Request,
-    ) -> Result<Response, crate::util::RouxError> {
+    ) -> Result<Response, reqwest::Error> {
         let mut lock = self.inner.ratelimit.lock().await;
         lock.delay().await;
         let response = self.inner.inner.execute(request).await?;
@@ -165,34 +171,68 @@ impl OAuthClient {
     }
 
     #[maybe_async::maybe_async]
-    pub(crate) async fn execute(
-        &self,
-        request: Request,
-    ) -> Result<Response, crate::util::RouxError> {
+    async fn inner_execute(&self, request: Request) -> Result<Response, ExecuteError> {
         let response = self.with_ratelimits(request).await?;
         if let Err(e) = response.error_for_status_ref() {
             let status = e.status().unwrap_or(StatusCode::BAD_REQUEST);
+            println!("[roux] Response error: {status:?}");
             match status {
                 StatusCode::TOO_MANY_REQUESTS => {
                     if let Some(value) = response.headers().get("Retry-After") {
                         if let Ok(value) = value.to_str() {
                             if let Ok(value) = value.parse() {
-                                return Err(RouxError::Ratelimited {
-                                    retry_after: Some(Duration::from_secs(value)),
-                                });
+                                return Err(ExecuteError::RetryAfter(Duration::from_secs(value)));
                             }
                         }
                     }
-                    Err(RouxError::Ratelimited { retry_after: None })
+                    Err(ExecuteError::RetryExponential)
                 }
                 StatusCode::BAD_REQUEST => {
                     let body = response.text().await?;
-                    Err(RouxError::RedditError { body })
+                    Err(ExecuteError::BadRequest(body))
                 }
-                _ => Err(crate::util::RouxError::FullNetwork(response, e)),
+                StatusCode::INTERNAL_SERVER_ERROR => Err(ExecuteError::RetryExponential),
+                _ => Err(ExecuteError::OtherResponseError(response, e)),
             }
         } else {
             Ok(response)
+        }
+    }
+
+    #[maybe_async::maybe_async]
+    pub(crate) async fn execute<F>(&self, builder: F) -> Result<Response, crate::util::RouxError>
+    where
+        F: Fn() -> RequestBuilder,
+    {
+        use super::req::sleep;
+
+        let mut retries = 0;
+        loop {
+            let request = builder().build()?;
+            match self.inner_execute(request).await {
+                Ok(response) => return Ok(response),
+                Err(ExecuteError::RetryAfter(duration)) => {
+                    retries += 1;
+                    println!("[roux] Retrying request after {duration:?} ({retries})");
+                    sleep(duration).await;
+                }
+                Err(ExecuteError::RetryExponential) => {
+                    retries += 1;
+                    let secs = std::cmp::min(60, 2u64.pow(retries));
+                    let duration = Duration::from_secs(secs);
+                    println!("[roux] Exp retrying request after {duration:?} ({retries})");
+                    sleep(duration).await;
+                }
+                Err(ExecuteError::BadRequest(body)) => {
+                    return Err(RouxError::RedditError { body });
+                }
+                Err(ExecuteError::OtherResponseError(response, e)) => {
+                    return Err(RouxError::FullNetwork(response, e));
+                }
+                Err(ExecuteError::Other(e)) => {
+                    return Err(RouxError::Network(e));
+                }
+            }
         }
     }
 
@@ -204,9 +244,11 @@ impl OAuthClient {
 impl RedditClient for OAuthClient {
     #[maybe_async::maybe_async]
     async fn get(&self, endpoint: impl Into<EndpointBuilder>) -> Result<Response, RouxError> {
-        let r = self.request(Method::GET, endpoint).build()?;
+        let endpoint = endpoint.into();
 
-        self.execute(r).await
+        let builder = || self.request(Method::GET, &endpoint);
+
+        self.execute(builder).await
     }
 
     #[maybe_async::maybe_async]
@@ -215,7 +257,8 @@ impl RedditClient for OAuthClient {
         endpoint: impl Into<EndpointBuilder>,
         form: &FormBuilder<'_>,
     ) -> Result<Response, RouxError> {
-        let r = self.request(Method::POST, endpoint).form(form).build()?;
+        let endpoint = endpoint.into();
+        let r = || self.request(Method::POST, &endpoint).form(form);
 
         self.execute(r).await
     }

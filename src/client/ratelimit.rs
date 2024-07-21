@@ -4,12 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-#[cfg(feature = "blocking")]
-use std::thread::sleep;
-
-#[cfg(not(feature = "blocking"))]
-use tokio::time::sleep;
-
+use super::req::sleep;
 use reqwest::header::HeaderMap;
 
 pub struct Ratelimit {

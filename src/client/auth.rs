@@ -55,11 +55,9 @@ impl AuthedClient {
             api_type: "json",
         };
 
-        let req = self
-            .0
-            .request(reqwest::Method::POST, "api/submit")
-            .form(&req)
-            .build()?;
+        let endpoint = EndpointBuilder::new("api/submit");
+
+        let req = || self.0.request(reqwest::Method::POST, &endpoint).form(&req);
 
         let parsed: crate::api::response::PostResponse<LazyThingCreatedData> =
             self.0.execute(req).await?.json().await?;
@@ -254,13 +252,13 @@ impl AuthedClient {
     /// Logout
     #[maybe_async::maybe_async]
     pub async fn logout(self) -> Result<(), RouxError> {
-        let url = "https://www.reddit.com/api/v1/revoke_token";
+        let url = EndpointBuilder::new("https://www.reddit.com/api/v1/revoke_token");
 
         let form = [("access_token", self.0.config().access_token.to_owned())];
 
         let response = self
             .0
-            .request(reqwest::Method::POST, url)
+            .request(reqwest::Method::POST, &url)
             .basic_auth(
                 &self.0.config().client_id,
                 Some(&self.0.config().client_secret),

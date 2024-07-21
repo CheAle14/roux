@@ -31,7 +31,7 @@ impl EndpointBuilder {
         self
     }
 
-    pub fn build(self, base_url: &str) -> String {
+    pub fn build(&self, base_url: &str) -> String {
         let dot_json = if self.with_dot_json { ".json" } else { "" };
         let mut joined = if self.path.len() == 0 || self.path.starts_with('/') {
             format!("{base_url}{}/{dot_json}", self.path)
@@ -43,7 +43,7 @@ impl EndpointBuilder {
             joined.push('?');
         }
 
-        for (key, value) in self.query {
+        for (key, value) in &self.query {
             joined.push_str(&key);
             joined.push('=');
             joined.push_str(&value);
