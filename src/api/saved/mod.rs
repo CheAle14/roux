@@ -17,4 +17,4 @@ pub enum SavedData {
 }
 
 /// Saved listing
-pub type Saved = BasicListing<SavedData>;
+pub type APISaved = BasicListing<SavedData>;

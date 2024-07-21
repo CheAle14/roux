@@ -1,13 +1,17 @@
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::api::comment::created::CreatedCommentData;
 use crate::api::me::MeData;
 use crate::api::response::{LazyThingCreatedData, MultipleBasicThingsData, PostResponse};
 use crate::api::saved::SavedData;
-use crate::api::{APISubmissions, Friend, Inbox, Saved as APISaved, ThingId};
+use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingId};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
-use crate::models::{CreatedComment, FromClientAndData, LatestComment, Listing, Saved, Submission};
+use crate::models::inbox::Inbox;
+use crate::models::{
+    CreatedComment, FromClientAndData, LatestComment, Listing, Message, Saved, Submission,
+};
 use crate::util::{FeedOption, RouxError};
 
 use super::endpoint::EndpointBuilder;
@@ -117,10 +121,12 @@ impl AuthedClient {
         self.0.post("api/compose", &form).await
     }
 
-    /// Get user's submitted posts.
+    /// Get user's received messages (includes both read and unread).
     #[maybe_async::maybe_async]
-    pub async fn inbox(&self) -> Result<Inbox, RouxError> {
-        Ok(self.0.get("message/inbox").await?.json::<Inbox>().await?)
+    pub async fn inbox(&self) -> Result<Inbox<Self>, RouxError> {
+        let api: APIInbox = self.0.get_json("message/inbox").await?;
+        let conv = Listing::new(api, self.clone());
+        Ok(conv)
     }
 
     #[maybe_async::maybe_async]
@@ -160,8 +166,10 @@ impl AuthedClient {
 
     /// Get users unread messages
     #[maybe_async::maybe_async]
-    pub async fn unread(&self) -> Result<Inbox, RouxError> {
-        self.0.get_json("message/unread").await
+    pub async fn unread(&self) -> Result<Inbox<Self>, RouxError> {
+        let api: APIInbox = self.0.get_json("message/unread").await?;
+        let conv = Listing::new(api, self.clone());
+        Ok(conv)
     }
 
     /// Mark message as read
@@ -180,22 +188,38 @@ impl AuthedClient {
 
     /// Comment
     #[maybe_async::maybe_async]
+    async fn _comment<Data: DeserializeOwned, T: FromClientAndData<Self, Data>>(
+        &self,
+        text: &str,
+        parent: &ThingId,
+    ) -> Result<T, RouxError> {
+        let form = FormBuilder::new()
+            .with("text", text)
+            .with("parent", parent.full());
+
+        let response: PostResponse<MultipleBasicThingsData<Data>> =
+            self.0.post_with_response("api/comment", &form).await?;
+
+        Ok(T::new(
+            self.clone(),
+            response.json.data.unwrap().assume_single(),
+        ))
+    }
+
+    /// Adds a comment under a submission or replies to a comment in a submission.
+    #[maybe_async::maybe_async]
     pub async fn comment(
         &self,
         text: &str,
         parent: &ThingId,
     ) -> Result<CreatedComment<Self>, RouxError> {
-        let form = FormBuilder::new()
-            .with("text", text)
-            .with("parent", parent.full());
+        self._comment(text, parent).await
+    }
 
-        let response: PostResponse<MultipleBasicThingsData<CreatedCommentData>> =
-            self.0.post_with_response("api/comment", &form).await?;
-
-        Ok(CreatedComment::new(
-            self.clone(),
-            response.json.data.unwrap().assume_single(),
-        ))
+    /// Adds a reply to an inbox message.
+    #[maybe_async::maybe_async]
+    pub async fn reply(&self, text: &str, parent: &ThingId) -> Result<Message<Self>, RouxError> {
+        self._comment(text, parent).await
     }
 
     /// Edit a 'thing'

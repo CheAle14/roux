@@ -36,7 +36,8 @@ pub struct InboxData {
     pub created_utc: f64,
     /// Context
     pub context: String,
+    pub first_message_name: Option<ThingId>,
 }
 
 /// Inbox
-pub type Inbox = BasicListing<InboxData>;
+pub type APIInbox = BasicListing<InboxData>;
