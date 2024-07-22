@@ -1,3 +1,5 @@
+use std::error::Error;
+use std::io;
 use std::{sync::Arc, time::Duration};
 
 use crate::client::traits::RedditClient;
@@ -26,7 +28,10 @@ pub struct OAuthClient {
 
 enum ExecuteError {
     RetryAfter(Duration),
-    RetryExponential,
+    RetryExponential {
+        max_retries: Option<u8>,
+        last_error: reqwest::Error,
+    },
     BadRequest(String),
     OtherResponseError(Response, reqwest::Error),
     Other(reqwest::Error),
@@ -171,31 +176,70 @@ impl OAuthClient {
     }
 
     #[maybe_async::maybe_async]
-    async fn inner_execute(&self, request: Request) -> Result<Response, ExecuteError> {
-        let response = self.with_ratelimits(request).await?;
-        if let Err(e) = response.error_for_status_ref() {
-            let status = e.status().unwrap_or(StatusCode::BAD_REQUEST);
-            println!("[roux] Response error: {status:?}");
-            match status {
-                StatusCode::TOO_MANY_REQUESTS => {
-                    if let Some(value) = response.headers().get("Retry-After") {
-                        if let Ok(value) = value.to_str() {
-                            if let Ok(value) = value.parse() {
-                                return Err(ExecuteError::RetryAfter(Duration::from_secs(value)));
-                            }
+    async fn convert_error(
+        &self,
+        response: reqwest::Response,
+        error: reqwest::Error,
+    ) -> ExecuteError {
+        let status = error.status().unwrap_or(StatusCode::BAD_REQUEST);
+        println!("[roux] Response error: {status:?}");
+        match status {
+            StatusCode::TOO_MANY_REQUESTS => {
+                if let Some(value) = response.headers().get("Retry-After") {
+                    if let Ok(value) = value.to_str() {
+                        if let Ok(value) = value.parse() {
+                            return ExecuteError::RetryAfter(Duration::from_secs(value));
                         }
                     }
-                    Err(ExecuteError::RetryExponential)
                 }
-                StatusCode::BAD_REQUEST => {
-                    let body = response.text().await?;
-                    Err(ExecuteError::BadRequest(body))
+                ExecuteError::RetryExponential {
+                    max_retries: None,
+                    last_error: error,
                 }
-                StatusCode::INTERNAL_SERVER_ERROR => Err(ExecuteError::RetryExponential),
-                _ => Err(ExecuteError::OtherResponseError(response, e)),
             }
-        } else {
-            Ok(response)
+            StatusCode::BAD_REQUEST => match response.text().await {
+                Ok(body) => ExecuteError::BadRequest(body),
+                Err(e) => ExecuteError::Other(e),
+            },
+            StatusCode::INTERNAL_SERVER_ERROR => ExecuteError::RetryExponential {
+                max_retries: Some(32),
+                last_error: error,
+            },
+            _ => ExecuteError::OtherResponseError(response, error),
+        }
+    }
+
+    #[maybe_async::maybe_async]
+    async fn inner_execute(&self, request: Request) -> Result<Response, ExecuteError> {
+        match self.with_ratelimits(request).await {
+            Ok(response) => {
+                // We did get a response from the server, but it may still be an error (e.g. bad request, etc)
+                if let Err(e) = response.error_for_status_ref() {
+                    let err = self.convert_error(response, e).await;
+                    Err(err)
+                } else {
+                    Ok(response)
+                }
+            }
+            Err(error) => {
+                // We either did not get a response or it was malformed in some way.
+                // Attempt to retry failures that could be intermittent, but fail eventually.
+                if let Some(inner) = error.source() {
+                    if let Some(err) = inner.downcast_ref::<std::io::Error>() {
+                        match err.kind() {
+                            std::io::ErrorKind::ConnectionAborted
+                            | std::io::ErrorKind::ConnectionReset => {
+                                return Err(ExecuteError::RetryExponential {
+                                    max_retries: Some(16),
+                                    last_error: error,
+                                });
+                            }
+                            _ => (),
+                        }
+                    }
+                }
+                return Err(ExecuteError::Other(error));
+            }
         }
     }
 
@@ -206,7 +250,7 @@ impl OAuthClient {
     {
         use super::req::sleep;
 
-        let mut retries = 0;
+        let mut retries: u32 = 0;
         loop {
             let request = builder().build()?;
             match self.inner_execute(request).await {
@@ -216,11 +260,22 @@ impl OAuthClient {
                     println!("[roux] Retrying request after {duration:?} ({retries})");
                     sleep(duration).await;
                 }
-                Err(ExecuteError::RetryExponential) => {
+                Err(ExecuteError::RetryExponential {
+                    max_retries,
+                    last_error,
+                }) => {
                     retries += 1;
+                    if let Some(max_retries) = max_retries {
+                        if retries > max_retries as u32 {
+                            println!("[roux] Exceeded max retries for request, raising err.");
+                            return Err(RouxError::network(last_error));
+                        }
+                    }
                     let secs = std::cmp::min(60, 2u64.pow(retries));
                     let duration = Duration::from_secs(secs);
-                    println!("[roux] Exp retrying request after {duration:?} ({retries})");
+                    println!(
+                        "[roux] Exp retrying request after {duration:?} ({retries}/{max_retries:?})"
+                    );
                     sleep(duration).await;
                 }
                 Err(ExecuteError::BadRequest(body)) => {
