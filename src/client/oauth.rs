@@ -178,7 +178,7 @@ impl OAuthClient {
     #[maybe_async::maybe_async]
     async fn convert_error(
         &self,
-        response: reqwest::Response,
+        response: super::req::Response,
         error: reqwest::Error,
     ) -> ExecuteError {
         let status = error.status().unwrap_or(StatusCode::BAD_REQUEST);
