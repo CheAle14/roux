@@ -100,14 +100,14 @@ impl OAuthClient {
                 .inner
                 .config
                 .username
-                .to_owned()
-                .ok_or(crate::util::RouxError::CredentialsNotSet)?,
+                .as_ref()
+                .ok_or(crate::util::RouxError::credentials_not_set())?,
             password: &self
                 .inner
                 .config
                 .password
-                .to_owned()
-                .ok_or(crate::util::RouxError::CredentialsNotSet)?,
+                .as_ref()
+                .ok_or(crate::util::RouxError::credentials_not_set())?,
         };
 
         let mut endpoint = EndpointBuilder::new("api/v1/access_token");
@@ -130,7 +130,7 @@ impl OAuthClient {
             let access_token = match auth_data {
                 AuthResponse::AuthData { access_token } => access_token,
                 AuthResponse::ErrorData { error } => {
-                    return Err(crate::util::RouxError::Auth(error))
+                    return Err(crate::util::RouxError::auth(error))
                 }
             };
 
@@ -140,7 +140,7 @@ impl OAuthClient {
             let client = Self::new(config)?;
             Ok(AuthedClient(client))
         } else {
-            Err(crate::util::RouxError::Status(response))
+            Err(crate::util::RouxError::status(response))
         }
     }
 
@@ -224,13 +224,13 @@ impl OAuthClient {
                     sleep(duration).await;
                 }
                 Err(ExecuteError::BadRequest(body)) => {
-                    return Err(RouxError::RedditError { body });
+                    return Err(RouxError::reddit_error(body));
                 }
                 Err(ExecuteError::OtherResponseError(response, e)) => {
-                    return Err(RouxError::FullNetwork(response, e));
+                    return Err(RouxError::full_network(response, e));
                 }
                 Err(ExecuteError::Other(e)) => {
-                    return Err(RouxError::Network(e));
+                    return Err(RouxError::network(e));
                 }
             }
         }

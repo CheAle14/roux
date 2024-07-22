@@ -270,7 +270,7 @@ impl AuthedClient {
         if response.status() == 204 {
             Ok(())
         } else {
-            Err(RouxError::Status(response))
+            Err(RouxError::status(response))
         }
     }
 }
