@@ -14,6 +14,7 @@ pub(crate) mod req {
 
 mod auth;
 pub(crate) mod endpoint;
+pub(crate) mod inner;
 mod noauth;
 mod oauth;
 mod ratelimit;

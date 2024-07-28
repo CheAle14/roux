@@ -6,7 +6,6 @@ pub struct Config {
     pub(crate) client_secret: String,
     pub(crate) username: Option<String>,
     pub(crate) password: Option<String>,
-    pub(crate) access_token: Option<String>,
 }
 
 impl Config {
@@ -18,7 +17,6 @@ impl Config {
             client_secret: client_secret.to_owned(),
             username: None,
             password: None,
-            access_token: None,
         }
     }
 
