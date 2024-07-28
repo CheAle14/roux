@@ -5,8 +5,11 @@ use reqwest::Method;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use crate::api::comment::APICreatedComments;
 use crate::api::me::MeData;
-use crate::api::response::{LazyThingCreatedData, MultipleBasicThingsData, PostResponse};
+use crate::api::response::{
+    BasicListing, LazyThingCreatedData, MultipleBasicThingsData, PostResponse,
+};
 use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingId};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
@@ -178,6 +181,26 @@ impl AuthedClient {
         let response: APISaved = self.get_json(url).await?;
         let conv = Listing::new(response, self.clone());
 
+        Ok(conv)
+    }
+
+    /// Get comments you have sent
+    #[maybe_async::maybe_async]
+    pub async fn comments(
+        &self,
+        options: Option<FeedOption>,
+    ) -> Result<Listing<CreatedComment<Self>>, RouxError> {
+        let mut url = EndpointBuilder::new(format!(
+            "user/{}/comments",
+            self.0.base.config.username.as_ref().unwrap()
+        ));
+
+        if let Some(options) = options {
+            options.build_url(&mut url);
+        }
+
+        let response: APICreatedComments = self.get_json(url).await?;
+        let conv = Listing::new(response, self.clone());
         Ok(conv)
     }
 

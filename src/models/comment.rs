@@ -426,6 +426,37 @@ macro_rules! impl_comment {
                 self.data.common.body = text.to_owned();
                 Ok(())
             }
+
+            /// Deletes our own comment. This will fail if we did not create the comment.
+            #[maybe_async::maybe_async]
+            pub async fn delete(&self) -> Result<(), RouxError> {
+                let form = FormBuilder::new().with("id", self.name().full());
+                let _ = self.client.post("api/del", &form).await?;
+                Ok(())
+            }
+        }
+    };
+}
+
+macro_rules! impl_comment_with_link_info {
+    ($name:ident) => {
+        impl<T> $name<T> {
+            /// Author of the link post this comment is under.
+            pub fn link_author(&self) -> &String {
+                &self.data.link_author
+            }
+            /// Permalink to the post this comment is under.
+            pub fn link_permalink(&self) -> &String {
+                &self.data.link_permalink
+            }
+            /// Title of the post this comment is under.
+            pub fn link_title(&self) -> &String {
+                &self.data.link_title
+            }
+            /// Link to the content of the post this comment is under.
+            pub fn link_url(&self) -> &String {
+                &self.data.link_url
+            }
         }
     };
 }
@@ -434,24 +465,8 @@ impl_comment!(LatestComment, LatestCommentData, "Represents a comment found thro
 impl_comment!(ArticleComment, ArticleCommentData, "Represents a comment with full information found through either creating it or [`crate::models::Submission::article_comments`]. For a comment with less information, see [`LatestComment`](crate::models::comment::LatestComment)");
 impl_comment!(CreatedComment, CreatedCommentData, "Represents a comment that you have created, either under a submission or in reply to another comment.");
 
-impl<T> LatestComment<T> {
-    /// Author of the link post this comment is under.
-    pub fn link_author(&self) -> &String {
-        &self.data.link_author
-    }
-    /// Permalink to the post this comment is under.
-    pub fn link_permalink(&self) -> &String {
-        &self.data.link_permalink
-    }
-    /// Title of the post this comment is under.
-    pub fn link_title(&self) -> &String {
-        &self.data.link_title
-    }
-    /// Link to the content of the post this comment is under.
-    pub fn link_url(&self) -> &String {
-        &self.data.link_url
-    }
-}
+impl_comment_with_link_info!(LatestComment);
+impl_comment_with_link_info!(CreatedComment);
 
 impl<T> ArticleComment<T> {
     /// How deep this comment is beneath the post.

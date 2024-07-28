@@ -12,3 +12,5 @@ pub use article::ArticleCommentsResponse;
 pub type APILatestComments = BasicListing<latest::LatestCommentData>;
 /// list of article comment data
 pub type APIArticleComments = BasicListing<article::ArticleCommentData>;
+/// list of created comment data
+pub type APICreatedComments = BasicListing<created::CreatedCommentData>;
