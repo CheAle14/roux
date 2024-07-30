@@ -3,6 +3,9 @@ use serde::Deserialize;
 
 use crate::api::response::BasicListing;
 
+mod flairs;
+pub use flairs::*;
+
 /// SubredditResponse
 #[derive(Debug, Deserialize)]
 pub struct SubredditResponse {

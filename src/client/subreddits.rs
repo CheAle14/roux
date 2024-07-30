@@ -64,8 +64,9 @@
 //! # }
 //! ```
 use crate::api::comment::latest::LatestCommentData;
-use crate::api::subreddit::{SubredditData, SubredditResponse, SubredditsData};
+use crate::api::subreddit::{FlairSelection, SubredditData, SubredditResponse, SubredditsData};
 
+use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::models::comment::{ArticleComments, LatestComments};
 use crate::models::submission::Submissions;
@@ -224,6 +225,32 @@ impl Subreddit<AuthedClient> {
     ) -> Result<Submission<AuthedClient>, RouxError> {
         self.client.submit(&self.name, submission).await
     }
+
+    /// List possible flair options in this subreddit
+    #[maybe_async::maybe_async]
+    pub async fn list_flairs(&self, selecting: FlairSelector) -> Result<FlairSelection, RouxError> {
+        let mut form = FormBuilder::new();
+        match selecting {
+            FlairSelector::Link(link) => form.add("link", link.into_inner()),
+            FlairSelector::NewLink => form.add("is_newlink", "true"),
+            FlairSelector::User(name) => form.add("name", name),
+        };
+
+        let url = self.endpoint("api/flairselector");
+
+        let got = self.client.post_with_response_raw(url, &form).await?;
+        Ok(got)
+    }
+}
+
+/// For use in [`Subreddit::list_flairs`](crate::client::subreddits::Subreddit::list_flairs)
+pub enum FlairSelector {
+    /// List potential flairs for an existing link
+    Link(ThingId),
+    /// List potential flairs for a new submission
+    NewLink,
+    /// List user flairs for a particular user.
+    User(String),
 }
 
 #[cfg(test)]

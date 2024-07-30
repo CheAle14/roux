@@ -1,9 +1,10 @@
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
+use crate::api::response::PostResponse;
 use crate::api::ThingId;
-use crate::builders::form::FormBuilder;
 use crate::models::comment::ArticleComments;
-use crate::models::{ArticleComment, Listing};
+use crate::models::Listing;
 use crate::util::url::build_subreddit;
 use crate::util::RouxError;
 
@@ -31,20 +32,38 @@ pub trait RedditClient {
     }
 
     /// Post the data to the endpoint.
-    async fn post(
+    async fn post<T: Serialize>(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &FormBuilder<'_>,
+        form: &T,
     ) -> Result<Response, RouxError>;
 
-    /// Post the data, parsing the response as JSON.
-    async fn post_with_response<TResp: DeserializeOwned>(
+    /// Post the data, parsing the response as a [`PostResponse<T>`](crate::api::response::PostResponse).  
+    /// If any errors are present, they are raised as [`RouxError::RedditError`](crate::util::error::RouxError).  
+    /// Otherwise, the data is unwrapped and returned.
+    async fn post_with_response<TReq: Serialize, TResp: DeserializeOwned>(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &FormBuilder<'_>,
+        form: &TReq,
+    ) -> Result<TResp, RouxError> {
+        let response: PostResponse<TResp> = self.post_with_response_raw(endpoint, form).await?;
+
+        if response.json.errors.len() > 0 {
+            Err(RouxError::reddit_error(response.json.errors))
+        } else {
+            Ok(response.json.data.unwrap())
+        }
+    }
+
+    /// Post the data, parsing the response as `TResp` directly.
+    async fn post_with_response_raw<TReq: Serialize, TResp: DeserializeOwned>(
+        &self,
+        endpoint: impl Into<EndpointBuilder>,
+        form: &TReq,
     ) -> Result<TResp, RouxError> {
         let response = self.post(endpoint, form).await?;
-        Ok(response.json().await?)
+        let response: TResp = response.json().await?;
+        Ok(response)
     }
 
     /// Creates a user helper, which can be used to make further requests using this underlying client

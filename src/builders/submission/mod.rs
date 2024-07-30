@@ -1,7 +1,7 @@
 use serde::{ser::SerializeStruct, Serialize};
 
 /// The type of submission, one of self text, rich text or link.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SubmissionSubmitKind {
     /// A text post
     SelfText {
@@ -58,7 +58,7 @@ impl Serialize for SubmissionSubmitKind {
 }
 
 /// A builder to gather the data to submit a post
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 pub struct SubmissionSubmitBuilder {
     title: String,
     #[serde(rename = "sendreplies")]
@@ -146,6 +146,12 @@ impl SubmissionSubmitBuilder {
     /// Defaults to `false`
     pub fn with_nsfw(mut self, nsfw: bool) -> Self {
         self.nsfw = nsfw;
+        self
+    }
+
+    /// Specifies the flair template ID used for the submission.
+    pub fn with_flair_id(mut self, flair_id: impl Into<String>) -> Self {
+        self.flair_id = Some(flair_id.into());
         self
     }
 }

@@ -7,9 +7,7 @@ use serde::Serialize;
 
 use crate::api::comment::APICreatedComments;
 use crate::api::me::MeData;
-use crate::api::response::{
-    BasicListing, LazyThingCreatedData, MultipleBasicThingsData, PostResponse,
-};
+use crate::api::response::{BasicListing, LazyThingCreatedData, MultipleBasicThingsData};
 use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingId};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
@@ -99,14 +97,9 @@ impl AuthedClient {
 
         let endpoint = EndpointBuilder::new("api/submit");
 
-        let req = || self.request(reqwest::Method::POST, &endpoint).form(&req);
+        let parsed: LazyThingCreatedData = self.post_with_response(endpoint, &req).await?;
 
-        let parsed: crate::api::response::PostResponse<LazyThingCreatedData> =
-            self.execute(req).await?.json().await?;
-
-        let mut submissions = self
-            .get_submissions(&[&parsed.json.data.unwrap().name])
-            .await?;
+        let mut submissions = self.get_submissions(&[&parsed.name]).await?;
         let rtn = submissions.data.children.pop().unwrap();
 
         Ok(crate::models::Submission::new(self.clone(), rtn.data))
@@ -122,7 +115,7 @@ impl AuthedClient {
     ) -> Result<bool, RouxError> {
         let form = FormBuilder::new().with("name", username).with("type", typ);
         let resp: Friend = self
-            .post_with_response(format!("r/{}/api/friend", sub).as_str(), &form)
+            .post_with_response_raw(format!("r/{}/api/friend", sub).as_str(), &form)
             .await?;
 
         Ok(resp.success)
@@ -138,7 +131,7 @@ impl AuthedClient {
     ) -> Result<bool, RouxError> {
         let form = FormBuilder::new().with("name", username).with("type", typ);
         let resp: Friend = self
-            .post_with_response(format!("r/{}/api/unfriend", sub).as_str(), &form)
+            .post_with_response_raw(format!("r/{}/api/unfriend", sub).as_str(), &form)
             .await?;
         Ok(resp.success)
     }
@@ -255,13 +248,10 @@ impl AuthedClient {
             .with("text", text)
             .with("parent", parent.full());
 
-        let response: PostResponse<MultipleBasicThingsData<Data>> =
+        let response: MultipleBasicThingsData<Data> =
             self.post_with_response("api/comment", &form).await?;
 
-        Ok(T::new(
-            self.clone(),
-            response.json.data.unwrap().assume_single(),
-        ))
+        Ok(T::new(self.clone(), response.assume_single()))
     }
 
     /// Adds a comment under a submission or replies to a comment in a submission.
@@ -382,10 +372,10 @@ impl RedditClient for AuthedClient {
 
     #[inline(always)]
     #[maybe_async::maybe_async]
-    async fn post(
+    async fn post<T: Serialize>(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &FormBuilder<'_>,
+        form: &T,
     ) -> Result<super::req::Response, RouxError> {
         let endpoint = endpoint.into();
 

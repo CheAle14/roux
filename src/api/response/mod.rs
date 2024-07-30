@@ -1,7 +1,7 @@
 //! # Responses
 //! Base responses
 
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::api::ThingId;
 
@@ -40,8 +40,24 @@ pub(crate) struct PostResponse<T> {
 
 #[derive(Deserialize, Debug)]
 pub(crate) struct PostResponseInner<T> {
+    #[serde(deserialize_with = "crate::util::defaults::null_to_empty")]
+    pub errors: Vec<ApiError>,
     pub data: Option<T>,
 }
+
+/// Represents a particular error returned by Reddit.
+///
+/// An example may be:
+///
+/// ```json
+///    [
+///     "RATELIMIT",
+///     "you are doing that too much. try again in 34 minutes.",
+///     "vdelay"
+///    ]
+/// ```
+#[derive(Debug, Deserialize)]
+pub struct ApiError(pub [String; 3]);
 
 /// A response for something that has been created, but without its actual data.
 #[derive(Deserialize, Debug)]

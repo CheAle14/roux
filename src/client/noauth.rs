@@ -2,6 +2,7 @@ use crate::{builders::form::FormBuilder, util::RouxError};
 
 use super::{endpoint::EndpointBuilder, req, traits::RedditClient};
 use reqwest::header;
+use serde::Serialize;
 
 /// An unauthenticated client that uses a generic user agent to interact with Reddit's API.
 #[derive(Clone)]
@@ -44,10 +45,10 @@ impl RedditClient for UnauthedClient {
     }
 
     #[maybe_async::maybe_async]
-    async fn post(
+    async fn post<T: Serialize>(
         &self,
         endpoint: impl Into<super::endpoint::EndpointBuilder>,
-        form: &FormBuilder<'_>,
+        form: &T,
     ) -> Result<super::req::Response, RouxError> {
         let endpoint: EndpointBuilder = endpoint.into();
         let endpoint = endpoint.build("https://www.reddit.com");

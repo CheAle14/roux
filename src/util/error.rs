@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use serde_json;
 
+use crate::api::response::ApiError;
 use crate::client;
 
 /// Error type that occurs when an API request fails for some reason.
@@ -21,12 +22,8 @@ pub enum RouxErrorKind {
         /// if that header did not exist on the response.
         retry_after: Option<Duration>,
     },
-    /// An error returned from Reddit's API.
-    /// TODO actually figure out its structure when we get one..
-    RedditError {
-        /// The (presumably JSON) reddit API error
-        body: String,
-    },
+    /// One or more errors returned from Reddit's API.
+    RedditError(Vec<ApiError>),
     /// Occurs if serde could not Deserialize the response.
     Parse(serde_json::Error),
     /// Occurs if there is a grant error.
@@ -76,8 +73,8 @@ impl RouxError {
         Self::new(RouxErrorKind::Network(error))
     }
 
-    pub(crate) fn reddit_error(body: String) -> Self {
-        Self::new(RouxErrorKind::RedditError { body })
+    pub(crate) fn reddit_error(body: Vec<ApiError>) -> Self {
+        Self::new(RouxErrorKind::RedditError(body))
     }
 
     pub(crate) fn parse(error: serde_json::Error) -> Self {
@@ -121,7 +118,7 @@ impl fmt::Display for RouxError {
             RouxErrorKind::Ratelimited { retry_after } => {
                 write!(f, "Ratelimited until {retry_after:?}")
             }
-            RouxErrorKind::RedditError { body } => write!(f, "API error: {body}"),
+            RouxErrorKind::RedditError(errors) => write!(f, "API errors: {errors:?}"),
         }?;
 
         write!(f, "\r\nBacktrace:\r\n{:}", self.backtrace)?;

@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::client::traits::RedditClient;
 use crate::{builders::form::FormBuilder, client::endpoint::EndpointBuilder};
 use reqwest::Method;
+use serde::Serialize;
 
 use super::inner::ClientInner;
 use super::{req::*, AuthedClient};
@@ -66,10 +67,10 @@ impl RedditClient for OAuthClient {
     }
 
     #[maybe_async::maybe_async]
-    async fn post(
+    async fn post<T: Serialize>(
         &self,
         endpoint: impl Into<EndpointBuilder>,
-        form: &FormBuilder<'_>,
+        form: &T,
     ) -> Result<Response, RouxError> {
         let endpoint = endpoint.into();
         let r = || self.request(Method::POST, &endpoint).form(form);

@@ -18,7 +18,6 @@ enum RetryableExecuteError {
         last_error: reqwest::Error,
     },
     Unauthorized,
-    BadRequest(String),
     OtherResponseError(Response, reqwest::Error),
     Other(reqwest::Error),
 }
@@ -31,7 +30,7 @@ impl From<reqwest::Error> for RetryableExecuteError {
 
 pub(crate) enum ExecuteError {
     AuthorizationRequired,
-    BadRequest(String),
+    AuthError(String),
     ErrorOnly(reqwest::Error),
     ResponseAndError(Response, reqwest::Error),
 }
@@ -46,8 +45,8 @@ impl From<ExecuteError> for RouxError {
     fn from(value: ExecuteError) -> Self {
         match value {
             ExecuteError::AuthorizationRequired => RouxError::credentials_not_set(),
-            ExecuteError::BadRequest(body) => RouxError::reddit_error(body),
             ExecuteError::ErrorOnly(error) => RouxError::network(error),
+            ExecuteError::AuthError(error) => RouxError::auth(error),
             ExecuteError::ResponseAndError(response, error) => {
                 RouxError::full_network(response, error)
             }
@@ -142,10 +141,6 @@ impl ClientInner {
                     last_error: error,
                 }
             }
-            StatusCode::BAD_REQUEST => match response.text().await {
-                Ok(body) => RetryableExecuteError::BadRequest(body),
-                Err(e) => RetryableExecuteError::Other(e),
-            },
             StatusCode::INTERNAL_SERVER_ERROR => RetryableExecuteError::RetryExponential {
                 max_retries: Some(32),
                 last_error: error,
@@ -224,9 +219,6 @@ impl ClientInner {
                     );
                     sleep(duration).await;
                 }
-                Err(RetryableExecuteError::BadRequest(body)) => {
-                    return Err(ExecuteError::BadRequest(body));
-                }
                 Err(RetryableExecuteError::OtherResponseError(response, e)) => {
                     return Err(ExecuteError::ResponseAndError(response, e));
                 }
@@ -284,7 +276,7 @@ impl ClientInner {
 
         let access_token = match auth_data {
             AuthResponse::AuthData { access_token } => access_token,
-            AuthResponse::ErrorData { error } => return Err(ExecuteError::BadRequest(error)),
+            AuthResponse::ErrorData { error } => return Err(ExecuteError::AuthError(error)),
         };
 
         Ok(access_token)

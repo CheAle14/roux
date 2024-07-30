@@ -67,6 +67,11 @@ impl ThingId {
     pub fn full(&self) -> &str {
         &self.0
     }
+
+    /// Returns underlying full thing ID, consuming self.
+    pub fn into_inner(self) -> String {
+        self.0
+    }
 }
 
 impl<'de> Deserialize<'de> for ThingId {

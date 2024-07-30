@@ -1,5 +1,4 @@
-/// Defaults for serde.
-pub mod defaults;
+pub(crate) mod defaults;
 /// Error responses.
 pub mod error;
 /// Url building.
