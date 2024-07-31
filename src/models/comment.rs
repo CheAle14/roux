@@ -1,7 +1,9 @@
 use crate::{
     api::{
         comment::{
-            article::ArticleCommentData, created::CreatedCommentData, latest::LatestCommentData,
+            article::ArticleCommentData,
+            created::{CreatedCommentData, CreatedCommentWithLinkInfoData},
+            latest::LatestCommentData,
         },
         MaybeReplies, ThingId,
     },
@@ -464,9 +466,10 @@ macro_rules! impl_comment_with_link_info {
 impl_comment!(LatestComment, LatestCommentData, "Represents a comment found through the [`Subreddit::latest_comments`](crate::client::Subreddit::latest_comments) or similar overview functions. For a comment with full information, see [`ArticleComment`](crate::models::comment::ArticleComment)");
 impl_comment!(ArticleComment, ArticleCommentData, "Represents a comment with full information found through either creating it or [`crate::models::Submission::article_comments`]. For a comment with less information, see [`LatestComment`](crate::models::comment::LatestComment)");
 impl_comment!(CreatedComment, CreatedCommentData, "Represents a comment that you have created, either under a submission or in reply to another comment.");
+impl_comment!(CreatedCommentWithLinkInfo, CreatedCommentWithLinkInfoData, "Represents a comment that you have created, with information about the submission it was made under.");
 
 impl_comment_with_link_info!(LatestComment);
-impl_comment_with_link_info!(CreatedComment);
+impl_comment_with_link_info!(CreatedCommentWithLinkInfo);
 
 impl<T> ArticleComment<T> {
     /// How deep this comment is beneath the post.

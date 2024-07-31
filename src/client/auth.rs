@@ -13,7 +13,10 @@ use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::client::{inner::ClientInner, req::*};
 use crate::models::inbox::Inbox;
-use crate::models::{CreatedComment, FromClientAndData, Listing, Message, Saved};
+use crate::models::submission::Submissions;
+use crate::models::{
+    CreatedComment, CreatedCommentWithLinkInfo, FromClientAndData, Listing, Message, Saved,
+};
 use crate::util::{FeedOption, RouxError};
 use crate::Config;
 
@@ -100,9 +103,8 @@ impl AuthedClient {
         let parsed: LazyThingCreatedData = self.post_with_response(endpoint, &req).await?;
 
         let mut submissions = self.get_submissions(&[&parsed.name]).await?;
-        let rtn = submissions.data.children.pop().unwrap();
 
-        Ok(crate::models::Submission::new(self.clone(), rtn.data))
+        Ok(submissions.children.pop().unwrap())
     }
 
     /// Adds a friend to a subreddit with the specified type
@@ -182,7 +184,7 @@ impl AuthedClient {
     pub async fn comments(
         &self,
         options: Option<FeedOption>,
-    ) -> Result<Listing<CreatedComment<Self>>, RouxError> {
+    ) -> Result<Listing<CreatedCommentWithLinkInfo<Self>>, RouxError> {
         let mut url = EndpointBuilder::new(format!(
             "user/{}/comments",
             self.0.base.config.username.as_ref().unwrap()
@@ -285,7 +287,7 @@ impl AuthedClient {
 
     /// Get submissions by id
     #[maybe_async::maybe_async]
-    pub async fn get_submissions(&self, ids: &[&ThingId]) -> Result<APISubmissions, RouxError> {
+    pub async fn get_submissions(&self, ids: &[&ThingId]) -> Result<Submissions<Self>, RouxError> {
         let mut ids = ids.iter().map(|id| id.full());
         let mut url = format!("by_id/");
         url.push_str(ids.next().unwrap());
@@ -296,7 +298,9 @@ impl AuthedClient {
 
         let url = EndpointBuilder::new(url);
 
-        self.get_json(url).await
+        let json: APISubmissions = self.get_json(url).await?;
+        let conv = Listing::new(json, self.clone());
+        Ok(conv)
     }
 
     /// Logout

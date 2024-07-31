@@ -7,6 +7,13 @@ pub struct CreatedCommentData {
     #[serde(flatten)]
     pub common: CommonCommentData,
     pub rte_mode: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CreatedCommentWithLinkInfoData {
+    #[serde(flatten)]
+    pub common: CommonCommentData,
+    pub rte_mode: String,
     // TODO: de-duplicate this and LatestCommentData.
     pub link_author: String,
     pub link_permalink: String,

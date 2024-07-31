@@ -4,7 +4,7 @@ use crate::{
     util::RouxError,
 };
 
-use super::{CreatedComment, FromClientAndData, Listing};
+use super::{FromClientAndData, Listing};
 
 /// A message in the inbox.
 pub struct Message<T> {
