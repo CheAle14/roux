@@ -165,11 +165,20 @@ impl ClientInner {
             Err(error) => {
                 // We either did not get a response or it was malformed in some way.
                 // Attempt to retry failures that could be intermittent, but fail eventually.
+
+                if error.is_connect() || error.is_timeout() {
+                    return Err(RetryableExecuteError::RetryExponential {
+                        max_retries: Some(16),
+                        last_error: error,
+                    });
+                }
+
                 if let Some(inner) = error.source() {
                     if let Some(err) = inner.downcast_ref::<std::io::Error>() {
                         match err.kind() {
                             std::io::ErrorKind::ConnectionAborted
-                            | std::io::ErrorKind::ConnectionReset => {
+                            | std::io::ErrorKind::ConnectionReset
+                            | std::io::ErrorKind::TimedOut => {
                                 return Err(RetryableExecuteError::RetryExponential {
                                     max_retries: Some(16),
                                     last_error: error,
