@@ -141,7 +141,9 @@ impl ClientInner {
                     last_error: error,
                 }
             }
-            StatusCode::INTERNAL_SERVER_ERROR => RetryableExecuteError::RetryExponential {
+            StatusCode::INTERNAL_SERVER_ERROR
+            | StatusCode::BAD_GATEWAY
+            | StatusCode::SERVICE_UNAVAILABLE => RetryableExecuteError::RetryExponential {
                 max_retries: Some(32),
                 last_error: error,
             },
