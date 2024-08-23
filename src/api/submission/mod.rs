@@ -213,7 +213,16 @@ pub enum SubmissionDataMediaMetadata {
         /// The media type, e.g. `image/png`
         m: String,
         /// The media value
-        s: SubmissionDataMediaMetadataValue,
+        s: SubmissionMetadataImage,
+    },
+    /// An animated image
+    AnimatedImage {
+        /// The ID for this media metadata.
+        id: String,
+        /// The media type, e.g. `image/gif`
+        m: String,
+        /// The media value
+        s: SubmissionMetadataAnimatedImage,
     },
     /// A reddit video
     RedditVideo {
@@ -237,9 +246,22 @@ pub enum SubmissionDataMediaMetadata {
     },
 }
 
-/// Submission media metadata values
+/// Submission media animated image metadata values
 #[derive(Debug, Serialize, Deserialize)]
-pub struct SubmissionDataMediaMetadataValue {
+pub struct SubmissionMetadataAnimatedImage {
+    /// Media width
+    pub x: u64,
+    /// Media height
+    pub y: u64,
+    /// URL to gif of this animated image
+    pub gif: String,
+    /// URL to mp4 of this animated image
+    pub mp4: String,
+}
+
+/// Submission media image metadata values
+#[derive(Debug, Serialize, Deserialize)]
+pub struct SubmissionMetadataImage {
     /// Media URL
     pub u: String,
     /// Media width
