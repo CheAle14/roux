@@ -241,6 +241,16 @@ impl Subreddit<AuthedClient> {
         let got = self.client.post_with_response_raw(url, &form).await?;
         Ok(got)
     }
+
+    /// Accepts an invite to become a moderator for this subreddit. Must have been invited by a current moderator.
+    #[maybe_async::maybe_async]
+    pub async fn accept_moderator_invite(&self) -> Result<(), RouxError> {
+        let form = FormBuilder::new();
+
+        let url = self.endpoint("api/accept_moderator_invite");
+        self.client.post(url, &form).await?;
+        Ok(())
+    }
 }
 
 /// For use in [`Subreddit::list_flairs`](crate::client::subreddits::Subreddit::list_flairs)

@@ -16,6 +16,9 @@ pub use comment::{ArticleComment, CreatedComment, CreatedCommentWithLinkInfo, La
 pub(crate) mod inbox;
 pub use inbox::Message;
 
+mod distinguish;
+pub use distinguish::Distinguish;
+
 pub(crate) trait FromClientAndData<Client, Data> {
     fn new(client: Client, data: Data) -> Self;
 }

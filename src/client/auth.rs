@@ -15,7 +15,8 @@ use crate::client::{inner::ClientInner, req::*};
 use crate::models::inbox::Inbox;
 use crate::models::submission::Submissions;
 use crate::models::{
-    CreatedComment, CreatedCommentWithLinkInfo, FromClientAndData, Listing, Message, Saved,
+    CreatedComment, CreatedCommentWithLinkInfo, Distinguish, FromClientAndData, Listing, Message,
+    Saved,
 };
 use crate::util::{FeedOption, RouxError};
 use crate::Config;
@@ -283,6 +284,42 @@ impl AuthedClient {
             .with("text", text)
             .with("thing_id", parent.full());
         self.post("api/editusertext", &form).await
+    }
+
+    /// Removes a 'thing', potentially for spam.
+    ///
+    /// This requires moderation permissions and will error without it.
+    #[maybe_async::maybe_async]
+    pub async fn remove(&self, thing_id: &ThingId, spam: bool) -> Result<(), RouxError> {
+        let form = FormBuilder::new()
+            .with("spam", if spam { "true" } else { "false" })
+            .with("id", thing_id.full());
+        self.post("api/remove", &form).await?;
+        Ok(())
+    }
+
+    /// Distinguishes a 'thing'.
+    #[maybe_async::maybe_async]
+    pub async fn distinguish(
+        &self,
+        thing: &ThingId,
+        kind: Distinguish,
+        sticky: bool,
+    ) -> Result<(), RouxError> {
+        let how = match kind {
+            Distinguish::None => "no",
+            Distinguish::Moderator => "yes",
+            Distinguish::Admin => "admin",
+            Distinguish::Special => "special",
+        };
+
+        let form = FormBuilder::new()
+            .with("how", how)
+            .with("sticky", if sticky { "true" } else { "false" })
+            .with("id", thing.full());
+
+        self.post("api/distinguish", &form).await?;
+        Ok(())
     }
 
     /// Get submissions by id

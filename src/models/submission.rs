@@ -15,7 +15,7 @@ use crate::{
     RouxError,
 };
 
-use super::{comment::ArticleComments, CreatedComment, FromClientAndData, Listing};
+use super::{comment::ArticleComments, CreatedComment, Distinguish, FromClientAndData, Listing};
 
 pub(crate) type Submissions<T> = Listing<Submission<T>>;
 
@@ -263,6 +263,11 @@ impl<T> Submission<T> {
     pub fn media_metadata(&self) -> &Option<HashMap<String, SubmissionDataMediaMetadata>> {
         &self.data.media_metadata
     }
+
+    /// Whether the current account can moderate this submission.
+    pub fn can_mod_post(&self) -> bool {
+        self.data.can_mod_post
+    }
 }
 
 impl<T: RedditClient + Clone> Submission<T> {
@@ -306,6 +311,18 @@ impl Submission<crate::client::AuthedClient> {
         self.client.edit(text, self.name()).await?;
         self.data.selftext = text.to_owned();
         Ok(())
+    }
+
+    /// Removes this submission, requires moderator permission in the subreddit.
+    #[maybe_async::maybe_async]
+    pub async fn remove(&self, spam: bool) -> Result<(), RouxError> {
+        self.client.remove(self.name(), spam).await
+    }
+
+    /// Distinguishes this submission.
+    #[maybe_async::maybe_async]
+    pub async fn distinguish(&self, kind: Distinguish) -> Result<(), RouxError> {
+        self.client.distinguish(self.name(), kind, false).await
     }
 }
 

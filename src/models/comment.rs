@@ -9,9 +9,9 @@ use crate::{
     },
     builders::form::FormBuilder,
     client::{AuthedClient, RedditClient},
+    models::Distinguish,
     util::RouxError,
 };
-
 use serde_json::Value;
 
 use super::Listing;
@@ -435,6 +435,22 @@ macro_rules! impl_comment {
                 let form = FormBuilder::new().with("id", self.name().full());
                 let _ = self.client.post("api/del", &form).await?;
                 Ok(())
+            }
+
+            /// Removes this comment, requires moderator permission in the subreddit.
+            #[maybe_async::maybe_async]
+            pub async fn remove(&self, spam: bool) -> Result<(), RouxError> {
+                self.client.remove(self.name(), spam).await
+            }
+
+            /// Distinguishes this comment.
+            #[maybe_async::maybe_async]
+            pub async fn distinguish(
+                &self,
+                kind: Distinguish,
+                sticky: bool,
+            ) -> Result<(), RouxError> {
+                self.client.distinguish(self.name(), kind, sticky).await
             }
         }
     };

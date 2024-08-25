@@ -150,6 +150,9 @@ pub struct SubmissionData {
     pub gallery_data: Option<SubmissionDataGalleryData>,
     /// The media metadata, used by the gallery if it is present.
     pub media_metadata: Option<HashMap<String, SubmissionDataMediaMetadata>>,
+    /// Whether the current account can moderate this submission.
+    #[serde(default)]
+    pub can_mod_post: bool,
 }
 
 /// SubmissionDataPreview
