@@ -145,7 +145,9 @@ pub struct SubmissionData {
     /// This is `true` if the user has visited this link.
     pub visited: bool,
     /// The number of reports, if the user is a moderator of this subreddit.
-    pub num_reports: Option<u64>,
+    ///
+    /// This can apparently be negative as well?
+    pub num_reports: Option<i64>,
     /// The gallery data for this submission, if it is a gallery post.
     pub gallery_data: Option<SubmissionDataGalleryData>,
     /// The media metadata, used by the gallery if it is present.

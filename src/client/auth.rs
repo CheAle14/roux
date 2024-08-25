@@ -322,24 +322,6 @@ impl AuthedClient {
         Ok(())
     }
 
-    /// Get submissions by id
-    #[maybe_async::maybe_async]
-    pub async fn get_submissions(&self, ids: &[&ThingId]) -> Result<Submissions<Self>, RouxError> {
-        let mut ids = ids.iter().map(|id| id.full());
-        let mut url = format!("by_id/");
-        url.push_str(ids.next().unwrap());
-        for next in ids {
-            url.push(',');
-            url.push_str(next);
-        }
-
-        let url = EndpointBuilder::new(url);
-
-        let json: APISubmissions = self.get_json(url).await?;
-        let conv = Listing::new(json, self.clone());
-        Ok(conv)
-    }
-
     /// Logout
     #[maybe_async::maybe_async]
     pub async fn logout(self) -> Result<(), RouxError> {

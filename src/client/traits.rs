@@ -2,9 +2,10 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::api::response::PostResponse;
-use crate::api::ThingId;
+use crate::api::{APISubmissions, ThingId};
 use crate::models::comment::ArticleComments;
-use crate::models::Listing;
+use crate::models::submission::Submissions;
+use crate::models::{Listing, Submission};
 use crate::util::url::build_subreddit;
 use crate::util::RouxError;
 
@@ -119,5 +120,40 @@ pub trait RedditClient {
         let conv = Listing::new(comments.comments, self.clone());
 
         Ok(conv)
+    }
+
+    /// Get submissions by id
+    #[maybe_async::maybe_async]
+    async fn get_submissions(&self, ids: &[&ThingId]) -> Result<Submissions<Self>, RouxError>
+    where
+        Self: Sized + Clone,
+    {
+        let mut ids = ids.iter().map(|id| id.full());
+        let mut url = format!("by_id/");
+        url.push_str(ids.next().unwrap());
+        for next in ids {
+            url.push(',');
+            url.push_str(next);
+        }
+
+        let url = EndpointBuilder::new(url);
+
+        let json: APISubmissions = self.get_json(url).await?;
+        let conv = Listing::new(json, self.clone());
+        Ok(conv)
+    }
+
+    /// Gets a submission by its permalink
+    #[maybe_async::maybe_async]
+    async fn get_submission_by_link(&self, url: &str) -> Result<Submission<Self>, RouxError>
+    where
+        Self: Sized + Clone,
+    {
+        let thing_id =
+            ThingId::from_submission_link(url).ok_or_else(|| RouxError::credentials_not_set())?;
+
+        let post = self.get_submissions(&[&thing_id]).await?;
+        let post = post.into_iter().next().unwrap();
+        Ok(post)
     }
 }

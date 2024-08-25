@@ -252,8 +252,8 @@ impl<T> Submission<T> {
         self.data.visited
     }
     /// The number of reports, if the user is a moderator of this subreddit.
-    pub fn num_reports(&self) -> &Option<u64> {
-        &self.data.num_reports
+    pub fn num_reports(&self) -> Option<i64> {
+        self.data.num_reports.as_ref().cloned()
     }
     /// The gallery data for this submission, if it is a gallery post.
     pub fn gallery_data(&self) -> &Option<SubmissionDataGalleryData> {
