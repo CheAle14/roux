@@ -1,4 +1,7 @@
-use serde::{Deserialize, Serialize};
+use serde::{
+    de::{Expected, Visitor},
+    Deserialize, Serialize,
+};
 use serde_json::Value;
 
 use crate::api::{MaybeReplies, ThingId};
@@ -80,9 +83,78 @@ pub struct CommonCommentData {
     pub user_reports: Vec<Value>,
 }
 
-#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
-#[serde(untagged)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Edited {
     EditedAt(f64),
     NotEdited,
+}
+
+impl<'de> Deserialize<'de> for Edited {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct EditedVistor;
+
+        impl<'de> Visitor<'de> for EditedVistor {
+            type Value = Edited;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(formatter, "boolean 'false' or a float timestamp")
+            }
+
+            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                if v == false {
+                    Ok(Edited::NotEdited)
+                } else {
+                    Err(E::invalid_value(
+                        serde::de::Unexpected::Bool(v),
+                        &"boolean 'false'" as &dyn Expected,
+                    ))
+                }
+            }
+
+            fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Edited::EditedAt(v))
+            }
+        }
+
+        deserializer.deserialize_any(EditedVistor)
+    }
+}
+
+impl Serialize for Edited {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Edited::EditedAt(f) => serializer.serialize_f64(*f),
+            Edited::NotEdited => serializer.serialize_bool(false),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::api::comment::common::Edited;
+
+    #[test]
+    fn serde_edited() {
+        assert_eq!(
+            serde_json::from_str::<Edited>("false").unwrap(),
+            Edited::NotEdited
+        );
+        assert_eq!(
+            serde_json::from_str::<Edited>("123.0").unwrap(),
+            Edited::EditedAt(123.0)
+        );
+        assert!(serde_json::from_str::<Edited>("true").is_err());
+    }
 }
