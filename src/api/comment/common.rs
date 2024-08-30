@@ -40,7 +40,7 @@ pub struct CommonCommentData {
     pub created_utc: f64,
     pub distinguished: Option<String>,
     pub downs: i32,
-    pub edited: bool,
+    pub edited: Edited,
     pub gilded: i32,
     pub gildings: Value,
     pub id: String,
@@ -78,4 +78,11 @@ pub struct CommonCommentData {
     pub unrepliable_reason: Option<Value>,
     pub ups: i32,
     pub user_reports: Vec<Value>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq)]
+#[serde(untagged)]
+pub enum Edited {
+    EditedAt(f64),
+    NotEdited,
 }

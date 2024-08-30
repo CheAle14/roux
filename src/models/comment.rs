@@ -199,7 +199,7 @@ macro_rules! impl_comment {
 
             /// Whether this comment has been edited.
             /// Note that edits within the first few minutes of the comment being created will not cause this to be true.
-            pub fn edited(&self) -> bool {
+            pub fn edited(&self) -> crate::api::comment::common::Edited {
                 self.data.common.edited
             }
 
