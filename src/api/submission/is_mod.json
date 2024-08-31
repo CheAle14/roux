@@ -1,0 +1,22 @@
+{
+    "approved": false,
+    "approved_at_utc": null,
+    "approved_by": null,
+    "ban_note": "remove not spam",
+    "banned_at_utc": 1725096693,
+    "banned_by": "exampleUsername",
+    "can_mod_post": true,
+    "ignore_reports": false,
+    "mod_note": null,
+    "mod_reason_by": null,
+    "mod_reason_title": null,
+    "mod_reports": [],
+    "num_reports": 0,
+    "removal_reason": null,
+    "removed": true,
+    "removed_by": "exampleUsername",
+    "removed_by_category": "moderator",
+    "report_reasons": [],
+    "spam": false,
+    "user_reports": []
+}

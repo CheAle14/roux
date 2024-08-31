@@ -6,15 +6,15 @@ use serde_json::Value;
 
 use crate::{api::response::BasicListing, api::ThingId};
 
+mod moddata;
+pub use moddata::*;
+
 /// SubmissionsData
 #[derive(Debug, Serialize, Deserialize)]
 pub struct SubmissionData {
     /// The domain of the link (if link post) or self.subreddit (if self post).
     /// Domains do not include a protocol, e.g. `i.redd.it` or `self.learnprogramming`
     pub domain: Option<String>,
-    /// Contains the name of the moderator who banned this, if the logged-in user is a moderator
-    /// of this subreddit and this is banned.
-    pub banned_by: Option<String>,
     // pub media_embed: MediaEmbed,
     /// The subreddit that this submission was posted in (not including `/r/`)
     pub subreddit: String,
@@ -58,9 +58,6 @@ pub struct SubmissionData {
     /// same as upvotes - downvotes (however, this figure may be fuzzed by Reddit, and may not
     /// be exact)
     pub score: f64,
-    /// This contains the name of the user who approved this submission. This is `None` unless
-    /// you are a mod of the subreddit **and** a user has approved this post.
-    pub approved_by: Option<String>,
     /// This is `true` if the 'nsfw' option has been selected for this submission.
     pub over_18: bool,
     /// This is `true` if the 'spoiler' option has been selected for this submission.
@@ -95,9 +92,6 @@ pub struct SubmissionData {
     // TODO: skipped secure_media_embed
     /// True if the logged-in user has saved this submission.
     pub saved: bool,
-    /// The reason for the post removal, if you are a moderator **and** this post has been
-    /// removed.
-    pub removal_reason: Option<String>,
     // TODO: skipped post_hint
     /// This is `true` if this submission is stickied (an 'annoucement' thread)
     pub stickied: bool,
@@ -144,17 +138,15 @@ pub struct SubmissionData {
     pub distinguished: Option<String>,
     /// This is `true` if the user has visited this link.
     pub visited: bool,
-    /// The number of reports, if the user is a moderator of this subreddit.
-    ///
-    /// This can apparently be negative as well?
-    pub num_reports: Option<i64>,
     /// The gallery data for this submission, if it is a gallery post.
     pub gallery_data: Option<SubmissionDataGalleryData>,
     /// The media metadata, used by the gallery if it is present.
     pub media_metadata: Option<HashMap<String, SubmissionDataMediaMetadata>>,
-    /// Whether the current account can moderate this submission.
-    #[serde(default)]
-    pub can_mod_post: bool,
+    /// Moderation related data for this post.
+    ///
+    /// This is present only if you are a moderator and can moderate this post.
+    #[serde(flatten, with = "moddata")]
+    pub moderation: Option<SubmissionModerationData>,
 }
 
 /// SubmissionDataPreview

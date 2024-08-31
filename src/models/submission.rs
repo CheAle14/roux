@@ -6,7 +6,7 @@ use crate::{
     api::{
         submission::{
             SubmissionData, SubmissionDataGalleryData, SubmissionDataMediaMetadata,
-            SubmissionDataPreview,
+            SubmissionDataPreview, SubmissionModerationData,
         },
         ThingId,
     },
@@ -30,11 +30,6 @@ impl<T> Submission<T> {
     /// Domains do not include a protocol, e.g. `i.redd.it` or `self.learnprogramming`
     pub fn domain(&self) -> &Option<String> {
         &self.data.domain
-    }
-    /// Contains the name of the moderator who banned this, if the logged-in user is a moderator
-    /// of this subreddit and this is banned.
-    pub fn banned_by(&self) -> &Option<String> {
-        &self.data.banned_by
     }
     // pub fn media_embed(&self) -> &MediaEmbed { &self.data.media_embed }
     /// The subreddit that this submission was posted in (not including `/r/`)
@@ -103,11 +98,6 @@ impl<T> Submission<T> {
     pub fn score(&self) -> f64 {
         self.data.score
     }
-    /// This contains the name of the user who approved this submission. This is `None` unless
-    /// you are a mod of the subreddit **and** a user has approved this post.
-    pub fn approved_by(&self) -> &Option<String> {
-        &self.data.approved_by
-    }
     /// This is `true` if the 'nsfw' option has been selected for this submission.
     pub fn over_18(&self) -> bool {
         self.data.over_18
@@ -171,11 +161,6 @@ impl<T> Submission<T> {
     /// True if the logged-in user has saved this submission.
     pub fn saved(&self) -> bool {
         self.data.saved
-    }
-    /// The reason for the post removal, if you are a moderator **and** this post has been
-    /// removed.
-    pub fn removal_reason(&self) -> &Option<String> {
-        &self.data.removal_reason
     }
     // TODO: skipped post_hint
     /// This is `true` if this submission is stickied (an 'annoucement' thread)
@@ -251,10 +236,6 @@ impl<T> Submission<T> {
     pub fn visited(&self) -> bool {
         self.data.visited
     }
-    /// The number of reports, if the user is a moderator of this subreddit.
-    pub fn num_reports(&self) -> Option<i64> {
-        self.data.num_reports.as_ref().cloned()
-    }
     /// The gallery data for this submission, if it is a gallery post.
     pub fn gallery_data(&self) -> &Option<SubmissionDataGalleryData> {
         &self.data.gallery_data
@@ -264,9 +245,11 @@ impl<T> Submission<T> {
         &self.data.media_metadata
     }
 
-    /// Whether the current account can moderate this submission.
-    pub fn can_mod_post(&self) -> bool {
-        self.data.can_mod_post
+    /// Moderation related data for this post.
+    ///
+    /// This is present only if you are a moderator and can moderate this post.
+    pub fn moderation(&self) -> Option<&SubmissionModerationData> {
+        self.data.moderation.as_ref()
     }
 }
 

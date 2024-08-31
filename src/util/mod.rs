@@ -8,3 +8,5 @@ pub use error::RouxError;
 pub mod option;
 pub use option::FeedOption;
 pub use option::TimePeriod;
+
+pub(crate) mod ser_map;
