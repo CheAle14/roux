@@ -29,7 +29,9 @@ pub trait RedditClient {
         &self,
         endpoint: impl Into<EndpointBuilder>,
     ) -> Result<T, RouxError> {
-        Ok(self.get(endpoint).await?.json().await?)
+        let response = self.get(endpoint).await?;
+
+        Ok(parse_response_as_json(response).await?)
     }
 
     /// Post the data to the endpoint.
@@ -63,7 +65,7 @@ pub trait RedditClient {
         form: &TReq,
     ) -> Result<TResp, RouxError> {
         let response = self.post(endpoint, form).await?;
-        let response: TResp = response.json().await?;
+        let response = parse_response_as_json(response).await?;
         Ok(response)
     }
 
@@ -156,4 +158,31 @@ pub trait RedditClient {
         let post = post.into_iter().next().unwrap();
         Ok(post)
     }
+}
+
+#[cfg(feature = "log-json-on-error")]
+#[maybe_async::maybe_async]
+async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> Result<T, RouxError> {
+    use std::sync::atomic::AtomicU64;
+    static ERRORS: AtomicU64 = AtomicU64::new(0);
+
+    let text = response.text().await?;
+
+    match serde_json::from_str(&text) {
+        Ok(v) => Ok(v),
+        Err(e) => {
+            let file = format!(
+                "roux-json-error-{}.json",
+                ERRORS.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+            );
+            std::fs::write(file, &text).unwrap();
+            Err(RouxError::from(e))
+        }
+    }
+}
+
+#[cfg(not(feature = "log-json-on-error"))]
+#[maybe_async::maybe_async]
+async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> Result<T, RouxError> {
+    Ok(response.json().await?)
 }
