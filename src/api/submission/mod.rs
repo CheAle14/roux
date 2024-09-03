@@ -200,7 +200,7 @@ pub struct SubmissionDataGalleryItem {
 }
 
 /// Submission media metadata
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize)]
 #[serde(tag = "e")]
 pub enum SubmissionDataMediaMetadata {
     /// An image
@@ -241,6 +241,92 @@ pub enum SubmissionDataMediaMetadata {
         #[serde(rename = "hlsUrl")]
         hls_url: String,
     },
+    /// Failed to parse (normally due to a missing tag)
+    Unknown,
+}
+
+impl<'de> Deserialize<'de> for SubmissionDataMediaMetadata {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let mut map = serde_json::Map::deserialize(deserializer)?;
+
+        let Some(tag) = map.remove("e") else {
+            return Ok(Self::Unknown);
+        };
+
+        let rest = Value::Object(map);
+
+        match tag.as_str() {
+            Some("Image") => {
+                #[derive(Deserialize)]
+                struct ImageDe {
+                    id: String,
+                    m: String,
+                    s: SubmissionMetadataImage,
+                }
+
+                let ImageDe { id, m, s } =
+                    ImageDe::deserialize(rest).map_err(serde::de::Error::custom)?;
+
+                Ok(Self::Image { id, m, s })
+            }
+            Some("AnimatedImage") => {
+                #[derive(Deserialize)]
+                struct AnimatedImageDe {
+                    id: String,
+                    m: String,
+                    s: SubmissionMetadataAnimatedImage,
+                }
+
+                let AnimatedImageDe { id, m, s } =
+                    AnimatedImageDe::deserialize(rest).map_err(serde::de::Error::custom)?;
+
+                Ok(Self::AnimatedImage { id, m, s })
+            }
+            Some("RedditVideo") => {
+                #[derive(Deserialize)]
+                struct RedditVideo {
+                    id: String,
+                    #[serde(rename = "isGif")]
+                    is_gif: bool,
+                    status: String,
+                    x: i32,
+                    y: i32,
+                    #[serde(rename = "dashUrl")]
+                    dash_url: String,
+                    #[serde(rename = "hlsUrl")]
+                    hls_url: String,
+                }
+
+                let RedditVideo {
+                    id,
+                    is_gif,
+                    status,
+                    x,
+                    y,
+                    dash_url,
+                    hls_url,
+                } = RedditVideo::deserialize(rest).map_err(serde::de::Error::custom)?;
+
+                Ok(Self::RedditVideo {
+                    id,
+                    is_gif,
+                    status,
+                    x,
+                    y,
+                    dash_url,
+                    hls_url,
+                })
+            }
+            Some(s) => Err(serde::de::Error::unknown_variant(
+                s,
+                &["Image", "AnimatedImage", "RedditVideo"],
+            )),
+            None => Err(serde::de::Error::custom("tag has incorrect type")),
+        }
+    }
 }
 
 /// Submission media animated image metadata values
