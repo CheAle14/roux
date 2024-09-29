@@ -40,6 +40,8 @@ pub struct SubmissionData {
     /// If this post is flaired, this set to `Some(FLAIR TEXT)`. Otherwise, it is `None`.
     /// Link flairs **can** be empty strings.
     pub link_flair_text: Option<String>,
+    /// If this post is flaired based on a template, the ID of that template.
+    pub link_flair_template_id: Option<String>,
     /// The ID of the post in base-36 form, as used in Reddit's links.
     pub id: String,
     // skipped from_kind
@@ -83,6 +85,8 @@ pub struct SubmissionData {
     /// The CSS class set for the author's flair (if available). If there is no flair, this is
     /// `None`.
     pub author_flair_css_class: Option<String>,
+    /// If the author is flaired based on a template, the ID of that template.
+    pub author_flair_template_id: Option<String>,
     /// The number of downvotes (fuzzed; see `score` for further explanation)
     pub downs: f64,
     /// The number of upvotes (fuzzed; see `score` for further explanation)

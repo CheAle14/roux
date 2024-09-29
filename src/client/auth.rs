@@ -322,6 +322,28 @@ impl AuthedClient {
         Ok(())
     }
 
+    /// Apply a flair to a link or user.
+    #[maybe_async::maybe_async]
+    pub async fn select_flair(
+        &self,
+        subreddit_name: &str,
+        target: SelectFlairTarget,
+        flair_template_id: &str,
+    ) -> Result<(), RouxError> {
+        let mut form = FormBuilder::new()
+            .with("flair_template_id", flair_template_id)
+            .with("text", "");
+
+        match &target {
+            SelectFlairTarget::Link(thing_id) => form.add("link", thing_id.full()),
+            SelectFlairTarget::User(name) => form.add("name", name.as_str()),
+        }
+
+        self.post(format!("r/{subreddit_name}/api/selectflair"), &form)?;
+
+        Ok(())
+    }
+
     /// Logout
     #[maybe_async::maybe_async]
     pub async fn logout(self) -> Result<(), RouxError> {
@@ -406,4 +428,12 @@ impl RedditClient for AuthedClient {
 
         self.execute(request).await
     }
+}
+
+/// The target to apply the flair to
+pub enum SelectFlairTarget {
+    /// A submission
+    Link(ThingId),
+    /// A user, by their username
+    User(String),
 }

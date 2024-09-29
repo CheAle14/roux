@@ -68,6 +68,10 @@ impl<T> Submission<T> {
     pub fn link_flair_text(&self) -> &Option<String> {
         &self.data.link_flair_text
     }
+    /// If this post is flaired based on a template, the ID of that template.
+    pub fn link_flair_template_id(&self) -> Option<&String> {
+        self.data.link_flair_template_id.as_ref()
+    }
     /// The ID of the post in base-36 form, as used in Reddit's links.
     pub fn id(&self) -> &String {
         &self.data.id
@@ -144,6 +148,10 @@ impl<T> Submission<T> {
     /// `None`.
     pub fn author_flair_css_class(&self) -> &Option<String> {
         &self.data.author_flair_css_class
+    }
+    /// If the author is flaired based on a template, the ID of that template.
+    pub fn author_flair_template_id(&self) -> Option<&String> {
+        self.data.link_flair_template_id.as_ref()
     }
     /// The number of downvotes (fuzzed; see `score` for further explanation)
     pub fn downs(&self) -> f64 {
@@ -306,6 +314,18 @@ impl Submission<crate::client::AuthedClient> {
     #[maybe_async::maybe_async]
     pub async fn distinguish(&self, kind: Distinguish) -> Result<(), RouxError> {
         self.client.distinguish(self.name(), kind, false).await
+    }
+
+    /// Selects a flair for this submission.
+    #[maybe_async::maybe_async]
+    pub async fn select_flair(&self, flair_template_id: &str) -> Result<(), RouxError> {
+        self.client
+            .select_flair(
+                self.subreddit(),
+                crate::client::SelectFlairTarget::Link(self.name().clone()),
+                flair_template_id,
+            )
+            .await
     }
 }
 
