@@ -7,9 +7,9 @@ use crate::api::response::{BasicThing, Listing};
 #[derive(Debug, Deserialize)]
 pub struct ModeratorData {
     /// The ID of the moderator
-    pub id: Option<String>,
+    pub id: String,
     /// The name of the moderator
-    pub name: Option<String>,
+    pub name: String,
     /// Author flair text
     pub author_flair_text: Option<String>,
     /// Mod permissions

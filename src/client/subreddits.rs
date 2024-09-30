@@ -125,7 +125,7 @@ impl<T: RedditClient + Clone> Subreddit<T> {
     /// Get subreddit data.
     #[maybe_async::maybe_async]
     pub async fn about(&self) -> Result<SubredditData, RouxError> {
-        let endpoint = self.endpoint("about/moderators");
+        let endpoint = self.endpoint("about");
         let resp: SubredditResponse = self.client.get_json(endpoint).await?;
         Ok(resp.data)
     }

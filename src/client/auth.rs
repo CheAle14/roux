@@ -339,7 +339,8 @@ impl AuthedClient {
             SelectFlairTarget::User(name) => form.add("name", name.as_str()),
         }
 
-        self.post(format!("r/{subreddit_name}/api/selectflair"), &form)?;
+        self.post(format!("r/{subreddit_name}/api/selectflair"), &form)
+            .await?;
 
         Ok(())
     }
