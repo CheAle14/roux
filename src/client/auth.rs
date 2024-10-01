@@ -8,7 +8,7 @@ use serde::Serialize;
 use crate::api::comment::APICreatedComments;
 use crate::api::me::MeData;
 use crate::api::response::{BasicListing, LazyThingCreatedData, MultipleBasicThingsData};
-use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingId};
+use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingFullname};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::client::{inner::ClientInner, req::*};
@@ -228,14 +228,14 @@ impl AuthedClient {
 
     /// Mark message as read
     #[maybe_async::maybe_async]
-    pub async fn mark_read(&self, ids: &ThingId) -> Result<super::req::Response, RouxError> {
+    pub async fn mark_read(&self, ids: &ThingFullname) -> Result<super::req::Response, RouxError> {
         let form = FormBuilder::new().with("id", ids.full());
         self.post("api/read_message", &form).await
     }
 
     /// Mark message as unread
     #[maybe_async::maybe_async]
-    pub async fn mark_unread(&self, ids: &ThingId) -> Result<super::req::Response, RouxError> {
+    pub async fn mark_unread(&self, ids: &ThingFullname) -> Result<super::req::Response, RouxError> {
         let form = FormBuilder::new().with("id", ids.full());
         self.post("api/unread_message", &form).await
     }
@@ -245,7 +245,7 @@ impl AuthedClient {
     async fn _comment<Data: DeserializeOwned, T: FromClientAndData<Self, Data>>(
         &self,
         text: &str,
-        parent: &ThingId,
+        parent: &ThingFullname,
     ) -> Result<T, RouxError> {
         let form = FormBuilder::new()
             .with("text", text)
@@ -262,14 +262,14 @@ impl AuthedClient {
     pub async fn comment(
         &self,
         text: &str,
-        parent: &ThingId,
+        parent: &ThingFullname,
     ) -> Result<CreatedComment<Self>, RouxError> {
         self._comment(text, parent).await
     }
 
     /// Adds a reply to an inbox message.
     #[maybe_async::maybe_async]
-    pub async fn reply(&self, text: &str, parent: &ThingId) -> Result<Message<Self>, RouxError> {
+    pub async fn reply(&self, text: &str, parent: &ThingFullname) -> Result<Message<Self>, RouxError> {
         self._comment(text, parent).await
     }
 
@@ -278,7 +278,7 @@ impl AuthedClient {
     pub async fn edit(
         &self,
         text: &str,
-        parent: &ThingId,
+        parent: &ThingFullname,
     ) -> Result<super::req::Response, RouxError> {
         let form = FormBuilder::new()
             .with("text", text)
@@ -290,7 +290,7 @@ impl AuthedClient {
     ///
     /// This requires moderation permissions and will error without it.
     #[maybe_async::maybe_async]
-    pub async fn remove(&self, thing_id: &ThingId, spam: bool) -> Result<(), RouxError> {
+    pub async fn remove(&self, thing_id: &ThingFullname, spam: bool) -> Result<(), RouxError> {
         let form = FormBuilder::new()
             .with("spam", if spam { "true" } else { "false" })
             .with("id", thing_id.full());
@@ -302,7 +302,7 @@ impl AuthedClient {
     #[maybe_async::maybe_async]
     pub async fn distinguish(
         &self,
-        thing: &ThingId,
+        thing: &ThingFullname,
         kind: Distinguish,
         sticky: bool,
     ) -> Result<(), RouxError> {
@@ -434,7 +434,7 @@ impl RedditClient for AuthedClient {
 /// The target to apply the flair to
 pub enum SelectFlairTarget {
     /// A submission
-    Link(ThingId),
+    Link(ThingFullname),
     /// A user, by their username
     User(String),
 }

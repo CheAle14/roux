@@ -8,7 +8,7 @@ use crate::{
             SubmissionData, SubmissionDataGalleryData, SubmissionDataMediaMetadata,
             SubmissionDataPreview, SubmissionModerationData,
         },
-        ThingId,
+        ThingFullname,
     },
     builders::form::FormBuilder,
     client::RedditClient,
@@ -128,7 +128,7 @@ impl<T> Submission<T> {
         &self.data.thumbnail
     }
     /// The Reddit ID for the subreddit where this was posted.
-    pub fn subreddit_id(&self) -> &ThingId {
+    pub fn subreddit_id(&self) -> &ThingFullname {
         &self.data.subreddit_id
     }
     /// This is `true` if the score is being hidden.
@@ -207,7 +207,7 @@ impl<T> Submission<T> {
     /// - t5_ - Subreddit
     /// - t6_ - Award
     /// - t8_ - PromoCampaign
-    pub fn name(&self) -> &ThingId {
+    pub fn name(&self) -> &ThingFullname {
         &self.data.name
     }
     /// A timestamp of the time when the post was created, in the logged-in user's **local**

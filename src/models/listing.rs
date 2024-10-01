@@ -1,13 +1,13 @@
-use crate::api::{response::BasicListing, response::Listing as APIListing, ThingId};
+use crate::api::{response::BasicListing, response::Listing as APIListing, ThingFullname};
 
 use super::FromClientAndData;
 
 /// Represents a view of a list of some thing `T`.
 pub struct Listing<T> {
     /// The full name of the thing which comes before this view.
-    pub before: Option<ThingId>,
+    pub before: Option<ThingFullname>,
     /// The full name of the thing which comes after this view.
-    pub after: Option<ThingId>,
+    pub after: Option<ThingFullname>,
     /// The items within this view
     pub children: Vec<T>,
     /// How many items were present

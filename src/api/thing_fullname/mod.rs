@@ -1,9 +1,9 @@
-//! # Thing Id
-//! A thing id represents a complete identifier to a particular object, encoding both its kind and a base-36 identifier.
+//! # Thing Fullname
+//! A thing fullname represents a complete identifier to a particular object, encoding both its kind and a base-36 identifier.
 
 use serde::{de::Error, Deserialize, Serialize};
 
-/// A wrapper for a thing id, which is a kind and base-36 identifier. The possible kinds include:
+/// A wrapper for a thing's fullname, which is a kind and base-36 identifier. The possible kinds include:
 /// - t1_ - Comment
 /// - t2_ - Account
 /// - t3_ - Link
@@ -12,9 +12,11 @@ use serde::{de::Error, Deserialize, Serialize};
 /// - t6_ - Award
 /// - t8_ - PromoCampaign
 #[derive(Debug, Clone, Serialize, PartialEq, Eq, Hash)]
-pub struct ThingId(String);
+pub struct ThingFullname(String);
 
-impl<'a> TryFrom<&'a str> for ThingId {
+const SPLIT_INDEX: usize = "t1".len();
+
+impl<'a> TryFrom<&'a str> for ThingFullname {
     type Error = ();
 
     fn try_from(thing_id: &'a str) -> Result<Self, Self::Error> {
@@ -24,7 +26,7 @@ impl<'a> TryFrom<&'a str> for ThingId {
     }
 }
 
-impl TryFrom<String> for ThingId {
+impl TryFrom<String> for ThingFullname {
     type Error = ();
 
     fn try_from(thing_id: String) -> Result<Self, Self::Error> {
@@ -34,7 +36,7 @@ impl TryFrom<String> for ThingId {
     }
 }
 
-impl ThingId {
+impl ThingFullname {
     fn validate(thing_id: &str) -> Result<(), ()> {
         let (kind, _) = thing_id.split_once('_').ok_or(())?;
         if kind.len() != 2 || !kind.starts_with("t") {
@@ -47,7 +49,13 @@ impl ThingId {
     /// Returns the kind and id separately
     #[inline(always)]
     pub fn split(&self) -> (&str, &str) {
-        self.0.split_once('_').expect("validated at input")
+        // SAFETY: format is validated on construction
+        unsafe {
+            (
+                &self.0.get_unchecked(..SPLIT_INDEX),
+                &self.0.get_unchecked(SPLIT_INDEX + 1..),
+            )
+        }
     }
 
     /// Returns just the kind, e.g. `t1`
@@ -92,17 +100,17 @@ impl ThingId {
             rest
         };
 
-        ThingId::try_from(format!("t3_{thing_id}")).ok()
+        ThingFullname::try_from(format!("t3_{thing_id}")).ok()
     }
 }
 
-impl<'de> Deserialize<'de> for ThingId {
+impl<'de> Deserialize<'de> for ThingFullname {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        ThingId::try_from(s).map_err(|()| D::Error::custom("invalid thing id"))
+        ThingFullname::try_from(s).map_err(|()| D::Error::custom("invalid thing id"))
     }
 }
 
@@ -111,24 +119,32 @@ mod tests {
     use super::*;
 
     #[test]
+    pub fn test_splitting() {
+        let thing = ThingFullname::try_from("t1_abcdef").unwrap();
+
+        assert_eq!(thing.kind(), "t1");
+        assert_eq!(thing.id(), "abcdef");
+    }
+
+    #[test]
     pub fn test_url_parse() {
         assert_eq!(
-            ThingId::from_submission_link(
+            ThingFullname::from_submission_link(
                 "https://www.reddit.com/r/somesubredditgoeshere/comments/1f155ot/with_a_title"
             ),
-            Some(ThingId(format!("t3_1f155ot")))
+            Some(ThingFullname(format!("t3_1f155ot")))
         );
         assert_eq!(
-            ThingId::from_submission_link(
+            ThingFullname::from_submission_link(
                 "https://www.reddit.com/r/somesubredditgoeshere/comments/1f155ot/"
             ),
-            Some(ThingId(format!("t3_1f155ot")))
+            Some(ThingFullname(format!("t3_1f155ot")))
         );
         assert_eq!(
-            ThingId::from_submission_link(
+            ThingFullname::from_submission_link(
                 "https://www.reddit.com/r/somesubredditgoeshere/comments/1f155ot"
             ),
-            Some(ThingId(format!("t3_1f155ot")))
+            Some(ThingFullname(format!("t3_1f155ot")))
         );
     }
 }

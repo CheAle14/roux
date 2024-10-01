@@ -75,7 +75,7 @@ use crate::util::url::build_subreddit;
 use crate::util::{FeedOption, RouxError};
 
 use crate::api::response::BasicListing as APIListing;
-use crate::api::{Moderators, ThingId};
+use crate::api::{Moderators, ThingFullname};
 
 use super::endpoint::EndpointBuilder;
 use super::traits::RedditClient;
@@ -199,7 +199,7 @@ impl<T: RedditClient + Clone> Subreddit<T> {
     #[maybe_async::maybe_async]
     pub async fn article_comments(
         &self,
-        article: &ThingId,
+        article: &ThingFullname,
         depth: Option<u32>,
         limit: Option<u32>,
     ) -> Result<ArticleComments<T>, RouxError> {
@@ -256,7 +256,7 @@ impl Subreddit<AuthedClient> {
 /// For use in [`Subreddit::list_flairs`](crate::client::subreddits::Subreddit::list_flairs)
 pub enum FlairSelector {
     /// List potential flairs for an existing link
-    Link(ThingId),
+    Link(ThingFullname),
     /// List potential flairs for a new submission
     NewLink,
     /// List user flairs for a particular user.

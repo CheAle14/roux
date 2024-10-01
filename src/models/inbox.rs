@@ -1,5 +1,5 @@
 use crate::{
-    api::{inbox::InboxData, ThingId},
+    api::{inbox::InboxData, ThingFullname},
     client::AuthedClient,
     util::RouxError,
 };
@@ -30,7 +30,7 @@ impl<T> Message<T> {
         &self.data.author
     }
     /// Parent ID
-    pub fn parent_id(&self) -> &Option<ThingId> {
+    pub fn parent_id(&self) -> &Option<ThingFullname> {
         &self.data.parent_id
     }
     /// Sub name
@@ -58,7 +58,7 @@ impl<T> Message<T> {
         &self.data.body_html
     }
     /// Name
-    pub fn name(&self) -> &ThingId {
+    pub fn name(&self) -> &ThingFullname {
         &self.data.name
     }
     /// Created
@@ -74,7 +74,7 @@ impl<T> Message<T> {
         &self.data.context
     }
     /// The first message in this reply chain.
-    pub fn first_message_name(&self) -> &Option<ThingId> {
+    pub fn first_message_name(&self) -> &Option<ThingFullname> {
         &self.data.first_message_name
     }
 }

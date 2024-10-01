@@ -4,7 +4,7 @@ use serde::{
 };
 use serde_json::Value;
 
-use crate::api::{MaybeReplies, ThingId};
+use crate::api::{MaybeReplies, ThingFullname};
 
 /// Data that is shared between the latest and article comments.
 #[derive(Debug, Serialize, Deserialize)]
@@ -22,7 +22,7 @@ pub struct CommonCommentData {
     pub author_flair_text: Option<String>,
     pub author_flair_text_color: Option<Value>,
     pub author_flair_type: String,
-    pub author_fullname: ThingId,
+    pub author_fullname: ThingFullname,
     pub author_is_blocked: bool,
     pub author_patreon_flair: bool,
     pub author_premium: bool,
@@ -50,16 +50,16 @@ pub struct CommonCommentData {
     pub ignore_reports: Option<bool>,
     pub is_submitter: bool,
     pub likes: Option<Value>,
-    pub link_id: ThingId,
+    pub link_id: ThingFullname,
     pub locked: bool,
     pub mod_note: Option<Value>,
     pub mod_reason_by: Option<Value>,
     pub mod_reason_title: Option<Value>,
     pub mod_reports: Vec<[String; 2]>,
-    pub name: ThingId,
+    pub name: ThingFullname,
     pub no_follow: bool,
     pub num_reports: Option<i32>,
-    pub parent_id: ThingId,
+    pub parent_id: ThingFullname,
     pub permalink: String,
     pub removal_reason: Option<Value>,
     pub removed: Option<bool>,
@@ -72,7 +72,7 @@ pub struct CommonCommentData {
     pub spam: Option<bool>,
     pub stickied: bool,
     pub subreddit: String,
-    pub subreddit_id: ThingId,
+    pub subreddit_id: ThingFullname,
     pub subreddit_name_prefixed: String,
     pub subreddit_type: String,
     pub top_awarded_type: Option<Value>,

@@ -10,7 +10,7 @@ pub mod response;
 pub mod saved;
 pub mod submission;
 pub mod subreddit;
-pub mod thing_id;
+pub mod thing_fullname;
 
 pub use about::About;
 pub use comment::{APIArticleComments, APILatestComments};
@@ -23,4 +23,4 @@ pub use reply::{MaybeReplies, Replies};
 pub use saved::APISaved;
 pub use submission::APISubmissions;
 pub use subreddit::SubredditData;
-pub use thing_id::ThingId;
+pub use thing_fullname::*;

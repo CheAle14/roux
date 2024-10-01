@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{api::response::BasicListing, api::ThingId};
+use crate::{api::response::BasicListing, api::ThingFullname};
 
 mod moddata;
 pub use moddata::*;
@@ -74,7 +74,7 @@ pub struct SubmissionData {
     /// a thumbnail is not available.
     pub thumbnail: String,
     /// The Reddit ID for the subreddit where this was posted.
-    pub subreddit_id: ThingId,
+    pub subreddit_id: ThingFullname,
     /// This is `true` if the score is being hidden.
     pub hide_score: bool,
     /// This is `false` if the submission is not edited and is the edit timestamp if it is edited.
@@ -123,7 +123,7 @@ pub struct SubmissionData {
     /// - t5_ - Subreddit
     /// - t6_ - Award
     /// - t8_ - PromoCampaign
-    pub name: ThingId,
+    pub name: ThingFullname,
     /// A timestamp of the time when the post was created, in the logged-in user's **local**
     /// time.
     pub created: f64,

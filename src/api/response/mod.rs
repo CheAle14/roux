@@ -3,7 +3,7 @@
 
 use serde::{Deserialize, Deserializer, Serialize};
 
-use crate::api::ThingId;
+use crate::api::ThingFullname;
 
 /// Basic structure of a Reddit response.
 /// See: <https://github.com/reddit-archive/reddit/wiki/JSON>
@@ -24,9 +24,9 @@ pub struct Listing<T> {
     /// The number of children in the listing.
     pub dist: Option<i32>,
     /// The fullname of the listing that follows after this page.
-    pub after: Option<ThingId>,
+    pub after: Option<ThingFullname>,
     /// The fullname of the listing that follows before this page.
-    pub before: Option<ThingId>,
+    pub before: Option<ThingFullname>,
     /// A list of `things` that this Listing wraps.
     pub children: Vec<T>,
 }
@@ -64,7 +64,7 @@ pub struct ApiError(pub [String; 3]);
 pub(crate) struct LazyThingCreatedData {
     #[allow(unused)]
     pub id: String,
-    pub name: ThingId,
+    pub name: ThingFullname,
 }
 
 #[derive(Deserialize, Debug)]

@@ -2,7 +2,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::api::response::PostResponse;
-use crate::api::{APISubmissions, ThingId};
+use crate::api::{APISubmissions, ThingFullname};
 use crate::models::comment::ArticleComments;
 use crate::models::submission::Submissions;
 use crate::models::{Listing, Submission};
@@ -98,7 +98,7 @@ pub trait RedditClient {
     async fn article_comments(
         &self,
         subreddit_name: &str,
-        article: &ThingId,
+        article: &ThingFullname,
         depth: Option<u32>,
         limit: Option<u32>,
     ) -> Result<ArticleComments<Self>, RouxError>
@@ -126,7 +126,7 @@ pub trait RedditClient {
 
     /// Get submissions by id
     #[maybe_async::maybe_async]
-    async fn get_submissions(&self, ids: &[&ThingId]) -> Result<Submissions<Self>, RouxError>
+    async fn get_submissions(&self, ids: &[&ThingFullname]) -> Result<Submissions<Self>, RouxError>
     where
         Self: Sized + Clone,
     {
@@ -151,8 +151,8 @@ pub trait RedditClient {
     where
         Self: Sized + Clone,
     {
-        let thing_id =
-            ThingId::from_submission_link(url).ok_or_else(|| RouxError::credentials_not_set())?;
+        let thing_id = ThingFullname::from_submission_link(url)
+            .ok_or_else(|| RouxError::credentials_not_set())?;
 
         let post = self.get_submissions(&[&thing_id]).await?;
         let post = post.into_iter().next().unwrap();

@@ -5,7 +5,7 @@ use crate::{
             created::{CreatedCommentData, CreatedCommentWithLinkInfoData},
             latest::LatestCommentData,
         },
-        MaybeReplies, ThingId,
+        MaybeReplies, ThingFullname,
     },
     builders::form::FormBuilder,
     client::{AuthedClient, RedditClient},
@@ -94,7 +94,7 @@ macro_rules! impl_comment {
             }
 
             /// The fullname of the author of this comment
-            pub fn author_fullname(&self) -> &ThingId {
+            pub fn author_fullname(&self) -> &ThingFullname {
                 &self.data.common.author_fullname
             }
 
@@ -234,7 +234,7 @@ macro_rules! impl_comment {
             }
 
             /// The full name of the post this comment is under.
-            pub fn link_id(&self) -> &ThingId {
+            pub fn link_id(&self) -> &ThingFullname {
                 &self.data.common.link_id
             }
 
@@ -264,7 +264,7 @@ macro_rules! impl_comment {
             }
 
             /// The full name of this comment
-            pub fn name(&self) -> &ThingId {
+            pub fn name(&self) -> &ThingFullname {
                 &self.data.common.name
             }
 
@@ -280,9 +280,9 @@ macro_rules! impl_comment {
 
             /// The full name of the parent of this comment.
             ///
-            /// If this is top-level comment, this will be the Submission's full name (and the [`kind`](crate::models::ThingId::kind) will be `t3`).
+            /// If this is top-level comment, this will be the Submission's full name (and the [`kind`](crate::models::ThingFullname::kind) will be `t3`).
             /// If this is a reply to another comment, this will instead be the full name of the parent comment (kind `t1`).
-            pub fn parent_id(&self) -> &ThingId {
+            pub fn parent_id(&self) -> &ThingFullname {
                 &self.data.common.parent_id
             }
 
@@ -349,7 +349,7 @@ macro_rules! impl_comment {
             }
 
             /// The full name of the subreddit that this comment was made in
-            pub fn subreddit_id(&self) -> &ThingId {
+            pub fn subreddit_id(&self) -> &ThingFullname {
                 &self.data.common.subreddit_id
             }
 
