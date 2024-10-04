@@ -1,6 +1,8 @@
+use std::future::Future;
 use std::sync::Arc;
 
 use crate::client::traits::RedditClient;
+use crate::util::maybe_async_handler;
 use crate::{builders::form::FormBuilder, client::endpoint::EndpointBuilder};
 use reqwest::Method;
 use serde::Serialize;
@@ -29,16 +31,6 @@ impl OAuthClient {
             inner: Arc::new(inner),
         })
     }
-
-    #[maybe_async::maybe_async]
-    pub(crate) async fn execute<F>(&self, builder: F) -> Result<Response, RouxError>
-    where
-        F: Fn() -> RequestBuilder,
-    {
-        let response = self.inner.execute(&builder).await?;
-        Ok(response)
-    }
-
     /// Attempts to login this client and produce an [`AuthedClient`].
     /// This will immediately error if the config does not have a username and password set.
     #[maybe_async::maybe_async]
@@ -47,35 +39,18 @@ impl OAuthClient {
         AuthedClient::new(self.inner.config.clone(), token)
     }
 
-    pub(crate) fn request(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
-        self.inner.request(method, endpoint)
-    }
-
     pub(crate) fn config(&self) -> &Config {
         &self.inner.config
     }
 }
 
 impl RedditClient for OAuthClient {
-    #[maybe_async::maybe_async]
-    async fn get(&self, endpoint: impl Into<EndpointBuilder>) -> Result<Response, RouxError> {
-        let endpoint = endpoint.into();
+    maybe_async_handler!(fn execute_with_retries(&self, builder, handler) RouxError {
+        Ok(self.inner.execute(builder, handler).await?)
+    });
 
-        let builder = || self.request(Method::GET, &endpoint);
-
-        self.execute(builder).await
-    }
-
-    #[maybe_async::maybe_async]
-    async fn post<T: Serialize>(
-        &self,
-        endpoint: impl Into<EndpointBuilder>,
-        form: &T,
-    ) -> Result<Response, RouxError> {
-        let endpoint = endpoint.into();
-        let r = || self.request(Method::POST, &endpoint).form(form);
-
-        self.execute(r).await
+    fn make_req(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
+        self.inner.request(method, endpoint)
     }
 }
 

@@ -1,3 +1,6 @@
+use std::future::Future;
+
+use reqwest::Method;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -7,11 +10,11 @@ use crate::models::comment::ArticleComments;
 use crate::models::submission::Submissions;
 use crate::models::{Listing, Submission};
 use crate::util::url::build_subreddit;
-use crate::util::RouxError;
+use crate::util::{maybe_async_handler, RouxError};
 
 use super::endpoint::EndpointBuilder;
 
-use super::req::Response;
+use super::req::*;
 use super::subreddits::{Subreddit, Subreddits};
 use super::user::User;
 
@@ -21,17 +24,57 @@ use super::user::User;
 /// as well as to specialize for Authed requests.
 #[maybe_async::maybe_async(AFIT)]
 pub trait RedditClient {
+    /// Sends a request to reddit (retrying if it fails), then calls a handler (such as reading as JSON),
+    /// and also retrying if *that* fails.
+    #[cfg(not(feature = "blocking"))]
+    async fn execute_with_retries<FReq, FRespFut, FResp, T>(
+        &self,
+        builder: &FReq,
+        handler: &FResp,
+    ) -> Result<T, RouxError>
+    where
+        FReq: Fn() -> RequestBuilder,
+        FRespFut: Future<Output = reqwest::Result<T>>,
+        FResp: Fn(Response) -> FRespFut;
+
+    /// Sends a request to reddit (retrying if it fails), then calls a handler (such as reading as JSON),
+    /// and also retrying if *that* fails.
+    #[cfg(feature = "blocking")]
+    fn execute_with_retries<FReq, FResp, T>(
+        &self,
+        builder: &FReq,
+        handler: &FResp,
+    ) -> Result<T, RouxError>
+    where
+        FReq: Fn() -> RequestBuilder,
+        FResp: Fn(Response) -> reqwest::Result<T>;
+
+    /// Builds a request to the endpoint with the particular method
+    fn make_req(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder;
+
     /// Get the endpoint, returning the raw response or an error.
-    async fn get(&self, endpoint: impl Into<EndpointBuilder>) -> Result<Response, RouxError>;
+    async fn get(&self, endpoint: impl Into<EndpointBuilder>) -> Result<Response, RouxError> {
+        let endpoint: EndpointBuilder = endpoint.into();
+
+        self.execute_with_retries(
+            &|| self.make_req(Method::GET, &endpoint),
+            &|response| async { Ok(response) },
+        )
+        .await
+    }
 
     /// Get the endpoint, parsing the response into the type.
     async fn get_json<T: DeserializeOwned>(
         &self,
         endpoint: impl Into<EndpointBuilder>,
     ) -> Result<T, RouxError> {
-        let response = self.get(endpoint).await?;
+        let endpoint: EndpointBuilder = endpoint.into();
 
-        Ok(parse_response_as_json(response).await?)
+        self.execute_with_retries(
+            &|| self.make_req(Method::GET, &endpoint),
+            &parse_response_as_json,
+        )
+        .await
     }
 
     /// Post the data to the endpoint.
@@ -39,7 +82,14 @@ pub trait RedditClient {
         &self,
         endpoint: impl Into<EndpointBuilder>,
         form: &T,
-    ) -> Result<Response, RouxError>;
+    ) -> Result<Response, RouxError> {
+        let endpoint: EndpointBuilder = endpoint.into();
+        self.execute_with_retries(
+            &|| self.make_req(Method::GET, &endpoint).form(form),
+            &|response| async { Ok(response) },
+        )
+        .await
+    }
 
     /// Post the data, parsing the response as a [`PostResponse<T>`](crate::api::response::PostResponse).  
     /// If any errors are present, they are raised as [`RouxError::RedditError`](crate::util::error::RouxError).  
@@ -64,9 +114,13 @@ pub trait RedditClient {
         endpoint: impl Into<EndpointBuilder>,
         form: &TReq,
     ) -> Result<TResp, RouxError> {
-        let response = self.post(endpoint, form).await?;
-        let response = parse_response_as_json(response).await?;
-        Ok(response)
+        let endpoint: EndpointBuilder = endpoint.into();
+
+        self.execute_with_retries(
+            &|| self.make_req(Method::POST, &endpoint).form(form),
+            &parse_response_as_json,
+        )
+        .await
     }
 
     /// Creates a user helper, which can be used to make further requests using this underlying client
@@ -183,6 +237,6 @@ async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> Resu
 
 #[cfg(not(feature = "log-json-on-error"))]
 #[maybe_async::maybe_async]
-async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> Result<T, RouxError> {
-    Ok(response.json().await?)
+async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> reqwest::Result<T> {
+    response.json().await
 }

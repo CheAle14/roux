@@ -1,3 +1,4 @@
+use std::future::Future;
 use std::sync::{Arc, RwLock};
 
 use reqwest::header::HeaderValue;
@@ -18,7 +19,7 @@ use crate::models::{
     CreatedComment, CreatedCommentWithLinkInfo, Distinguish, FromClientAndData, Listing, Message,
     Saved,
 };
-use crate::util::{FeedOption, RouxError};
+use crate::util::{maybe_async_handler, FeedOption, RouxError};
 use crate::Config;
 
 use super::endpoint::EndpointBuilder;
@@ -235,7 +236,10 @@ impl AuthedClient {
 
     /// Mark message as unread
     #[maybe_async::maybe_async]
-    pub async fn mark_unread(&self, ids: &ThingFullname) -> Result<super::req::Response, RouxError> {
+    pub async fn mark_unread(
+        &self,
+        ids: &ThingFullname,
+    ) -> Result<super::req::Response, RouxError> {
         let form = FormBuilder::new().with("id", ids.full());
         self.post("api/unread_message", &form).await
     }
@@ -269,7 +273,11 @@ impl AuthedClient {
 
     /// Adds a reply to an inbox message.
     #[maybe_async::maybe_async]
-    pub async fn reply(&self, text: &str, parent: &ThingFullname) -> Result<Message<Self>, RouxError> {
+    pub async fn reply(
+        &self,
+        text: &str,
+        parent: &ThingFullname,
+    ) -> Result<Message<Self>, RouxError> {
         self._comment(text, parent).await
     }
 
@@ -354,7 +362,7 @@ impl AuthedClient {
         let form = [("access_token", read.to_str().unwrap())];
 
         let response = self
-            .request(reqwest::Method::POST, &url)
+            .make_req(reqwest::Method::POST, &url)
             .basic_auth(
                 &self.0.base.config.client_id,
                 Some(&self.0.base.config.client_secret),
@@ -369,23 +377,13 @@ impl AuthedClient {
             Err(RouxError::status(response))
         }
     }
+}
 
-    pub(crate) fn request(
-        &self,
-        method: reqwest::Method,
-        endpoint: &EndpointBuilder,
-    ) -> RequestBuilder {
-        self.0.request(method, endpoint)
-    }
-
-    #[maybe_async::maybe_async]
-    pub(crate) async fn execute<F>(&self, builder: F) -> Result<Response, RouxError>
-    where
-        F: Fn() -> RequestBuilder,
-    {
+impl RedditClient for AuthedClient {
+    maybe_async_handler!(fn execute_with_retries(&self, builder, handler) RouxError {
         let mut has_retried = false;
         loop {
-            match self.0.base.execute(&builder).await {
+            match self.0.base.execute(builder, handler).await {
                 Ok(response) => return Ok(response),
                 Err(ExecuteError::AuthorizationRequired) => {
                     if has_retried {
@@ -399,35 +397,10 @@ impl AuthedClient {
                 Err(other_error) => return Err(other_error.into()),
             }
         }
-    }
-}
+    });
 
-impl RedditClient for AuthedClient {
-    #[inline(always)]
-    #[maybe_async::maybe_async]
-    async fn get(
-        &self,
-        endpoint: impl Into<EndpointBuilder>,
-    ) -> Result<super::req::Response, RouxError> {
-        let endpoint = endpoint.into();
-
-        let request = || self.request(Method::GET, &endpoint);
-
-        self.execute(request).await
-    }
-
-    #[inline(always)]
-    #[maybe_async::maybe_async]
-    async fn post<T: Serialize>(
-        &self,
-        endpoint: impl Into<EndpointBuilder>,
-        form: &T,
-    ) -> Result<super::req::Response, RouxError> {
-        let endpoint = endpoint.into();
-
-        let request = || self.request(Method::POST, &endpoint).form(form);
-
-        self.execute(request).await
+    fn make_req(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
+        self.0.request(method, endpoint)
     }
 }
 

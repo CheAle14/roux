@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::future::Future;
 use std::time::Duration;
 
 use reqwest::{header, Method, StatusCode};
@@ -8,6 +9,8 @@ use crate::client::ratelimit::Ratelimit;
 use crate::client::req::*;
 use crate::util::RouxError;
 use crate::Config;
+
+use crate::util::maybe_async_handler;
 
 use super::endpoint::EndpointBuilder;
 
@@ -23,8 +26,30 @@ enum RetryableExecuteError {
 }
 
 impl From<reqwest::Error> for RetryableExecuteError {
-    fn from(value: reqwest::Error) -> Self {
-        Self::Other(value)
+    fn from(error: reqwest::Error) -> Self {
+        if error.is_connect() || error.is_timeout() {
+            return Self::RetryExponential {
+                max_retries: Some(16),
+                last_error: error,
+            };
+        }
+
+        if let Some(inner) = error.source() {
+            if let Some(err) = inner.downcast_ref::<std::io::Error>() {
+                match err.kind() {
+                    std::io::ErrorKind::ConnectionAborted
+                    | std::io::ErrorKind::ConnectionReset
+                    | std::io::ErrorKind::TimedOut => {
+                        return Self::RetryExponential {
+                            max_retries: Some(16),
+                            last_error: error,
+                        };
+                    }
+                    _ => (),
+                }
+            }
+        }
+        return Self::Other(error);
     }
 }
 
@@ -168,45 +193,30 @@ impl ClientInner {
                 // We either did not get a response or it was malformed in some way.
                 // Attempt to retry failures that could be intermittent, but fail eventually.
 
-                if error.is_connect() || error.is_timeout() {
-                    return Err(RetryableExecuteError::RetryExponential {
-                        max_retries: Some(16),
-                        last_error: error,
-                    });
-                }
-
-                if let Some(inner) = error.source() {
-                    if let Some(err) = inner.downcast_ref::<std::io::Error>() {
-                        match err.kind() {
-                            std::io::ErrorKind::ConnectionAborted
-                            | std::io::ErrorKind::ConnectionReset
-                            | std::io::ErrorKind::TimedOut => {
-                                return Err(RetryableExecuteError::RetryExponential {
-                                    max_retries: Some(16),
-                                    last_error: error,
-                                });
-                            }
-                            _ => (),
-                        }
-                    }
-                }
-                return Err(RetryableExecuteError::Other(error));
+                Err(RetryableExecuteError::from(error))
             }
         }
     }
 
-    #[maybe_async::maybe_async]
-    pub(crate) async fn execute<F>(&self, builder: &F) -> Result<Response, ExecuteError>
-    where
-        F: Fn() -> RequestBuilder,
-    {
+    maybe_async_handler!(pub(crate) fn execute (&self, builder, handler) ExecuteError {
         use super::req::sleep;
 
         let mut retries: u32 = 0;
         loop {
             let request = builder().build()?;
-            match self.inner_execute(request).await {
-                Ok(response) => return Ok(response),
+
+            let response = self.inner_execute(request).await;
+
+            let result = match response {
+                Ok(t) => {
+                    let handled = handler(t).await;
+                    handled.map_err(RetryableExecuteError::from)
+                }
+                Err(e) => Err(e),
+            };
+
+            match result {
+                Ok(t) => return Ok(t),
                 Err(RetryableExecuteError::RetryAfter(duration)) => {
                     retries += 1;
                     println!("[roux] Retrying request after {duration:?} ({retries})");
@@ -241,7 +251,7 @@ impl ClientInner {
                 }
             }
         }
-    }
+    });
 
     #[maybe_async::maybe_async]
     pub(crate) async fn attempt_login(&self) -> Result<String, ExecuteError> {
@@ -282,8 +292,9 @@ impl ClientInner {
                 .form(&login)
         };
 
-        let response = self.execute(&request).await?;
-        let auth_data = response.json::<AuthResponse>().await?;
+        let handler = |response: crate::client::req::Response| response.json::<AuthResponse>();
+
+        let auth_data = self.execute(&request, &handler).await?;
 
         let access_token = match auth_data {
             AuthResponse::AuthData { access_token } => access_token,

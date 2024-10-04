@@ -1,13 +1,18 @@
-use crate::{builders::form::FormBuilder, util::RouxError};
+use std::future::Future;
 
-use super::{endpoint::EndpointBuilder, req, traits::RedditClient};
-use reqwest::header;
+use crate::{
+    builders::form::FormBuilder,
+    util::{maybe_async_handler, RouxError},
+};
+
+use super::{endpoint::EndpointBuilder, req::*, traits::RedditClient};
+use reqwest::{header, Method};
 use serde::Serialize;
 
 /// An unauthenticated client that uses a generic user agent to interact with Reddit's API.
 #[derive(Clone)]
 pub struct UnauthedClient {
-    inner: req::Client,
+    inner: Client,
 }
 
 impl UnauthedClient {
@@ -19,7 +24,7 @@ impl UnauthedClient {
             header::HeaderValue::from_static("roux/rust"),
         );
 
-        let inner = req::ClientBuilder::new().default_headers(headers).build()?;
+        let inner = ClientBuilder::new().default_headers(headers).build()?;
 
         Ok(Self { inner })
     }
@@ -54,5 +59,16 @@ impl RedditClient for UnauthedClient {
         let endpoint = endpoint.build("https://www.reddit.com");
         let resp = self.inner.post(endpoint).form(form).send().await?;
         Ok(resp)
+    }
+
+    maybe_async_handler!(fn execute_with_retries(&self, builder, handler) RouxError {
+        let req = builder().build()?;
+        let response = self.inner.execute(req).await?;
+        Ok(handler(response).await?)
+    });
+
+    fn make_req(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
+        let endpoint = endpoint.build("https://www.reddit.com");
+        self.inner.request(method, &endpoint)
     }
 }
