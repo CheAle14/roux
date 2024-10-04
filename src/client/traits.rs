@@ -85,7 +85,7 @@ pub trait RedditClient {
     ) -> Result<Response, RouxError> {
         let endpoint: EndpointBuilder = endpoint.into();
         self.execute_with_retries(
-            &|| self.make_req(Method::GET, &endpoint).form(form),
+            &|| self.make_req(Method::POST, &endpoint).form(form),
             &|response| async { Ok(response) },
         )
         .await
