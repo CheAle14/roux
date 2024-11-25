@@ -216,21 +216,14 @@ pub trait RedditClient {
 
 #[cfg(feature = "log-json-on-error")]
 #[maybe_async::maybe_async]
-async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> Result<T, RouxError> {
-    use std::sync::atomic::AtomicU64;
-    static ERRORS: AtomicU64 = AtomicU64::new(0);
-
+async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> reqwest::Result<T> {
     let text = response.text().await?;
 
     match serde_json::from_str(&text) {
         Ok(v) => Ok(v),
         Err(e) => {
-            let file = format!(
-                "roux-json-error-{}.json",
-                ERRORS.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
-            );
-            std::fs::write(file, &text).unwrap();
-            Err(RouxError::from(e))
+            std::fs::write("roux-json-error.json", &text).unwrap();
+            panic!("Failed to parse JSON: {e}");
         }
     }
 }
