@@ -8,7 +8,7 @@ use crate::{
             SubmissionData, SubmissionDataGalleryData, SubmissionDataMediaMetadata,
             SubmissionDataPreview, SubmissionModerationData,
         },
-        ThingFullname,
+        Distinguished, ThingFullname,
     },
     builders::form::FormBuilder,
     client::RedditClient,
@@ -237,8 +237,8 @@ impl<T> Submission<T> {
         self.data.created_utc
     }
     /// Distinguished
-    pub fn distinguished(&self) -> &Option<String> {
-        &self.data.distinguished
+    pub fn distinguished(&self) -> Distinguished {
+        self.data.distinguished
     }
     /// This is `true` if the user has visited this link.
     pub fn visited(&self) -> bool {

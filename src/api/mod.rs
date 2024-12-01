@@ -12,8 +12,11 @@ pub mod submission;
 pub mod subreddit;
 pub mod thing_fullname;
 
+mod distinguished;
+
 pub use about::About;
 pub use comment::{APIArticleComments, APILatestComments};
+pub use distinguished::*;
 pub use friend::Friend;
 pub use inbox::APIInbox;
 pub use me::MeData;

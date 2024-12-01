@@ -5,7 +5,7 @@ use crate::{
             created::{CreatedCommentData, CreatedCommentWithLinkInfoData},
             latest::LatestCommentData,
         },
-        MaybeReplies, ThingFullname,
+        Distinguished, MaybeReplies, ThingFullname,
     },
     builders::form::FormBuilder,
     client::{AuthedClient, RedditClient},
@@ -187,9 +187,9 @@ macro_rules! impl_comment {
                 self.data.common.created_utc
             }
 
-            /// Presumably some kind of `mod` or `admin` enum?
-            pub fn distinguished(&self) -> &Option<String> {
-                &self.data.common.distinguished
+            /// The distinguishment of this comment
+            pub fn distinguished(&self) -> Distinguished {
+                self.data.common.distinguished
             }
 
             /// The downvotes on this comment. Note that these values are fuzzed.

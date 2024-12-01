@@ -4,7 +4,7 @@ use serde::{
 };
 use serde_json::Value;
 
-use crate::api::{MaybeReplies, ThingFullname};
+use crate::api::{Distinguished, MaybeReplies, ThingFullname};
 
 /// Data that is shared between the latest and article comments.
 #[derive(Debug, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ pub struct CommonCommentData {
     pub controversiality: i32,
     pub created: f64,
     pub created_utc: f64,
-    pub distinguished: Option<String>,
+    pub distinguished: Distinguished,
     pub downs: i32,
     pub edited: Edited,
     pub gilded: i32,

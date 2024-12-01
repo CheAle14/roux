@@ -12,7 +12,7 @@ pub enum Distinguish {
     /// It has been distinguished as an Admin, requires admin account.
     #[serde(rename = "admin")]
     Admin,
-    /// A special per-user distinguish type.
+    /// A special distinguish type.
     #[serde(rename = "special")]
     Special,
 }

@@ -1,13 +1,15 @@
 //! # Subreddit Submission Responses
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
+use serde::{de::Visitor, Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::{api::response::BasicListing, api::ThingFullname};
 
 mod moddata;
 pub use moddata::*;
+
+use super::Distinguished;
 
 /// SubmissionsData
 #[derive(Debug, Serialize, Deserialize)]
@@ -139,7 +141,7 @@ pub struct SubmissionData {
     /// A timestamp of the time when the post was created, in **UTC**.
     pub created_utc: f64,
     /// Distinguished
-    pub distinguished: Option<String>,
+    pub distinguished: Distinguished,
     /// This is `true` if the user has visited this link.
     pub visited: bool,
     /// The gallery data for this submission, if it is a gallery post.
