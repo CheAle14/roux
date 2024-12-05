@@ -62,8 +62,75 @@ impl<'de> Deserialize<'de> for Distinguished {
                     )),
                 }
             }
+
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Distinguished::None)
+            }
         }
 
         deserializer.deserialize_any(DistinguishedVisitor)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+
+    use crate::api::Distinguished;
+
+    #[derive(Serialize, Deserialize)]
+    struct TestStruct {
+        pub distinguished: Distinguished,
+    }
+
+    #[test]
+    pub fn test_null_is_none() {
+        const JSON: &str = r#"{"distinguished":null}"#;
+
+        let value: TestStruct = serde_json::from_str(JSON).unwrap();
+        assert_eq!(value.distinguished, Distinguished::None);
+
+        let back = serde_json::to_string(&value).unwrap();
+
+        assert_eq!(back, JSON);
+    }
+
+    #[test]
+    pub fn test_moderator() {
+        const JSON: &str = r#"{"distinguished":"moderator"}"#;
+
+        let value: TestStruct = serde_json::from_str(JSON).unwrap();
+        assert_eq!(value.distinguished, Distinguished::Moderator);
+
+        let back = serde_json::to_string(&value).unwrap();
+
+        assert_eq!(back, JSON);
+    }
+
+    #[test]
+    pub fn test_admin() {
+        const JSON: &str = r#"{"distinguished":"admin"}"#;
+
+        let value: TestStruct = serde_json::from_str(JSON).unwrap();
+        assert_eq!(value.distinguished, Distinguished::Admin);
+
+        let back = serde_json::to_string(&value).unwrap();
+
+        assert_eq!(back, JSON);
+    }
+
+    #[test]
+    pub fn test_special() {
+        const JSON: &str = r#"{"distinguished":"special"}"#;
+
+        let value: TestStruct = serde_json::from_str(JSON).unwrap();
+        assert_eq!(value.distinguished, Distinguished::Special);
+
+        let back = serde_json::to_string(&value).unwrap();
+
+        assert_eq!(back, JSON);
     }
 }
