@@ -64,7 +64,9 @@
 //! # }
 //! ```
 use crate::api::comment::latest::LatestCommentData;
-use crate::api::subreddit::{FlairSelection, SubredditData, SubredditResponse, SubredditsData};
+use crate::api::subreddit::{
+    FlairSelection, SubredditData, SubredditRemovalReasons, SubredditResponse, SubredditsData,
+};
 
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
@@ -250,6 +252,13 @@ impl Subreddit<AuthedClient> {
         let url = self.endpoint("api/accept_moderator_invite");
         self.client.post(url, &form).await?;
         Ok(())
+    }
+
+    /// Returns a list of removal reasons for this subreddit.
+    #[maybe_async::maybe_async]
+    pub async fn list_removal_reasons(&self) -> Result<SubredditRemovalReasons, RouxError> {
+        let url = EndpointBuilder::new(format!("api/v1/{name}/removal_reasons", name = self.name));
+        self.client.get_json(url).await
     }
 }
 
