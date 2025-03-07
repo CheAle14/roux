@@ -63,9 +63,12 @@
 //! let next_hot = subreddit.hot(25, Some(after_options)).await;
 //! # }
 //! ```
+use serde::Serialize;
+
 use crate::api::comment::latest::LatestCommentData;
 use crate::api::subreddit::{
-    FlairSelection, SubredditData, SubredditRemovalReasons, SubredditResponse, SubredditsData,
+    FlairSelection, ModActionData, ModActionType, ModLogListing, SubredditData,
+    SubredditRemovalReasons, SubredditResponse, SubredditsData,
 };
 
 use crate::builders::form::FormBuilder;
@@ -73,6 +76,7 @@ use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::models::comment::{ArticleComments, LatestComments};
 use crate::models::submission::Submissions;
 use crate::models::{ArticleComment, LatestComment, Listing, Submission};
+use crate::util::ser_enumstr::{get_enum_name, SerEnumToStr};
 use crate::util::url::build_subreddit;
 use crate::util::{FeedOption, RouxError};
 
@@ -259,6 +263,39 @@ impl Subreddit<AuthedClient> {
     pub async fn list_removal_reasons(&self) -> Result<SubredditRemovalReasons, RouxError> {
         let url = EndpointBuilder::new(format!("api/v1/{name}/removal_reasons", name = self.name));
         self.client.get_json(url).await
+    }
+
+    /// Returns a list of mod actions taken
+    #[maybe_async::maybe_async]
+    pub async fn list_mod_log(
+        &self,
+        after: Option<String>,
+        limit: Option<u16>,
+        moderators: Option<String>,
+        action: Option<ModActionType>,
+    ) -> Result<Vec<ModActionData>, RouxError> {
+        let mut endpoint = self.endpoint("about/log");
+
+        if let Some(after) = after {
+            endpoint.with_query("after", after);
+        }
+
+        if let Some(limit) = limit {
+            endpoint.with_query("limit", limit.min(500).to_string());
+        }
+
+        if let Some(mods) = moderators {
+            endpoint.with_query("mod", mods);
+        }
+
+        if let Some(action) = action {
+            let name = get_enum_name(&action);
+            endpoint.with_query("type", name);
+        }
+
+        let result: ModLogListing = self.client.get_json(endpoint).await?;
+
+        Ok(result.data.children.into_iter().map(|d| d.data).collect())
     }
 }
 

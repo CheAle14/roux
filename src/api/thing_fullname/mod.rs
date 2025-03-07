@@ -27,12 +27,13 @@ impl<'a> TryFrom<&'a str> for ThingFullname {
 }
 
 impl TryFrom<String> for ThingFullname {
-    type Error = ();
+    type Error = String;
 
     fn try_from(thing_id: String) -> Result<Self, Self::Error> {
-        Self::validate(&thing_id)?;
-
-        Ok(Self(thing_id))
+        match Self::validate(&thing_id) {
+            Ok(()) => Ok(Self(thing_id)),
+            Err(()) => Err(thing_id),
+        }
     }
 }
 
@@ -110,7 +111,8 @@ impl<'de> Deserialize<'de> for ThingFullname {
         D: serde::Deserializer<'de>,
     {
         let s = String::deserialize(deserializer)?;
-        ThingFullname::try_from(s).map_err(|()| D::Error::custom("invalid thing id"))
+        ThingFullname::try_from(s)
+            .map_err(|id| D::Error::custom(format!("invalid thing id '{id}'")))
     }
 }
 

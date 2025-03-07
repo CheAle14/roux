@@ -4,9 +4,11 @@ use serde::Deserialize;
 use crate::api::response::BasicListing;
 
 mod flairs;
+mod modlog;
 mod removal_reasons;
 
 pub use flairs::*;
+pub use modlog::*;
 pub use removal_reasons::*;
 
 /// SubredditResponse

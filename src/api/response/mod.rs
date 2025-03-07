@@ -31,6 +31,21 @@ pub struct Listing<T> {
     pub children: Vec<T>,
 }
 
+/// JSON list response.
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ListingNotFullname<T> {
+    /// Modhash
+    pub modhash: Option<String>,
+    /// The number of children in the listing.
+    pub dist: Option<i32>,
+    /// The arbitrary ID of the listing that follows after this page.
+    pub after: Option<String>,
+    /// The arbitrary of the listing that follows before this page.
+    pub before: Option<String>,
+    /// A list of `things` that this Listing wraps.
+    pub children: Vec<T>,
+}
+
 /// Note that `api_type=json` must be passed as a form param to get this as the response.
 /// Otherwise you get weird jQuery stuff.
 #[derive(Deserialize, Debug)]
