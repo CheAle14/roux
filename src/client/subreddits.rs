@@ -112,7 +112,8 @@ impl<T: RedditClient> Subreddits<T> {
 pub struct Subreddit<T> {
     /// Name of subreddit.
     pub name: String,
-    client: T,
+    /// The reddit client used.
+    pub client: T,
 }
 
 impl<T: RedditClient + Clone> Subreddit<T> {
