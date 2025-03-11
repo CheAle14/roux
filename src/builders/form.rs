@@ -42,6 +42,18 @@ impl<'a, const N: usize> From<[(&'static str, &'a str); N]> for FormBuilder<'a> 
     }
 }
 
+impl<'f> std::fmt::Debug for FormBuilder<'f> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = f.debug_struct("FormBuilder");
+
+        for (key, value) in &self.values {
+            s.field(&key, &value);
+        }
+
+        s.finish()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::FormBuilder;

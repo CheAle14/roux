@@ -166,12 +166,19 @@ impl ClientInner {
                     last_error: error,
                 }
             }
-            StatusCode::INTERNAL_SERVER_ERROR
-            | StatusCode::BAD_GATEWAY
-            | StatusCode::SERVICE_UNAVAILABLE => RetryableExecuteError::RetryExponential {
-                max_retries: Some(32),
-                last_error: error,
-            },
+            StatusCode::INTERNAL_SERVER_ERROR => {
+                if let Ok(t) = response.text().await {
+                    println!("500: {t}");
+                }
+
+                RetryableExecuteError::Other(error)
+            }
+            StatusCode::BAD_GATEWAY | StatusCode::SERVICE_UNAVAILABLE => {
+                RetryableExecuteError::RetryExponential {
+                    max_retries: Some(32),
+                    last_error: error,
+                }
+            }
             StatusCode::UNAUTHORIZED => RetryableExecuteError::Unauthorized,
             _ => RetryableExecuteError::OtherResponseError(response, error),
         }

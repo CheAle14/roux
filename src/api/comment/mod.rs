@@ -7,7 +7,7 @@ pub mod latest;
 
 use super::response::BasicListing;
 
-pub use article::ArticleCommentsResponse;
+pub use article::{ArticleCommentsResponse, ArticleCommentsResponseWithoutComments};
 /// list of latest comment data
 pub type APILatestComments = BasicListing<latest::LatestCommentData>;
 /// list of article comment data

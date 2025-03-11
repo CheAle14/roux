@@ -353,6 +353,35 @@ impl AuthedClient {
         Ok(())
     }
 
+    /// Stickies or unstickies a submission.
+    #[maybe_async::maybe_async]
+    pub async fn sticky(
+        &self,
+        post: &ThingFullname,
+        state: bool,
+        slot: crate::models::SubmissionStickySlot,
+    ) -> Result<(), RouxError> {
+        #[derive(Debug, Serialize)]
+        struct Body<'a> {
+            id: &'a str,
+            state: bool,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            num: Option<u8>,
+        }
+
+        let body = Body {
+            id: post.full(),
+            state,
+            num: match (state, slot) {
+                (true, crate::models::SubmissionStickySlot::Top) => Some(1),
+                _ => None,
+            },
+        };
+
+        self.post("api/set_subreddit_sticky", &body).await?;
+        Ok(())
+    }
+
     /// Logout
     #[maybe_async::maybe_async]
     pub async fn logout(self) -> Result<(), RouxError> {

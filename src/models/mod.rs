@@ -5,7 +5,7 @@ pub(crate) mod listing;
 pub use listing::Listing;
 
 pub(crate) mod submission;
-pub use submission::Submission;
+pub use submission::{Submission, SubmissionStickySlot};
 
 pub(crate) mod saved;
 pub use saved::Saved;

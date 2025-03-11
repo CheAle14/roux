@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use serde::Serialize;
 use serde_json::Value;
 
 use crate::{
@@ -316,6 +317,20 @@ impl Submission<crate::client::AuthedClient> {
         self.client.distinguish(self.name(), kind, false).await
     }
 
+    /// Stickies or unstickies this submission.
+    #[maybe_async::maybe_async]
+    pub async fn sticky(&self, state: bool, slot: SubmissionStickySlot) -> Result<(), RouxError> {
+        self.client.sticky(self.name(), state, slot).await
+    }
+
+    /// Unstickies this submission
+    #[maybe_async::maybe_async]
+    pub async fn unsticky(&self) -> Result<(), RouxError> {
+        self.client
+            .sticky(self.name(), false, SubmissionStickySlot::Top)
+            .await
+    }
+
     /// Selects a flair for this submission.
     #[maybe_async::maybe_async]
     pub async fn select_flair(&self, flair_template_id: &str) -> Result<(), RouxError> {
@@ -327,6 +342,15 @@ impl Submission<crate::client::AuthedClient> {
             )
             .await
     }
+}
+
+/// The slot a post could be stickied to
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum SubmissionStickySlot {
+    /// First
+    Top,
+    /// Second
+    Bottom,
 }
 
 impl<T> FromClientAndData<T, SubmissionData> for Submission<T> {

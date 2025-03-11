@@ -63,7 +63,7 @@
 //! let next_hot = subreddit.hot(25, Some(after_options)).await;
 //! # }
 //! ```
-use serde::Serialize;
+use reqwest::StatusCode;
 
 use crate::api::comment::latest::LatestCommentData;
 use crate::api::subreddit::{
@@ -75,8 +75,9 @@ use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::models::comment::{ArticleComments, LatestComments};
 use crate::models::submission::Submissions;
-use crate::models::{ArticleComment, LatestComment, Listing, Submission};
-use crate::util::ser_enumstr::{get_enum_name, SerEnumToStr};
+use crate::models::{FromClientAndData, Listing, Submission, SubmissionStickySlot};
+use crate::util::error::RouxErrorKind;
+use crate::util::ser_enumstr::get_enum_name;
 use crate::util::url::build_subreddit;
 use crate::util::{FeedOption, RouxError};
 
@@ -213,6 +214,41 @@ impl<T: RedditClient + Clone> Subreddit<T> {
         self.client
             .article_comments(&self.name, article, depth, limit)
             .await
+    }
+
+    /// Fetches the stickied post on the subreddit, if there is one.
+    #[maybe_async::maybe_async]
+    pub async fn sticky(
+        &self,
+        slot: SubmissionStickySlot,
+    ) -> Result<Option<Submission<T>>, RouxError> {
+        let mut url = self.endpoint("about/sticky");
+
+        match slot {
+            SubmissionStickySlot::Top => (),
+            SubmissionStickySlot::Bottom => {
+                url.with_query("num", "2");
+            }
+        }
+
+        let response = match self.client.get(url).await {
+            Ok(response) => response,
+            Err(error) => match error.kind {
+                RouxErrorKind::FullNetwork(response, _)
+                    if response.status() == StatusCode::NOT_FOUND =>
+                {
+                    return Ok(None)
+                }
+                _ => return Err(error),
+            },
+        };
+
+        let data: crate::api::comment::ArticleCommentsResponseWithoutComments =
+            response.json().await?;
+
+        let post = Submission::new(self.client.clone(), data.submission);
+
+        Ok(Some(post))
     }
 }
 
