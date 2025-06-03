@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use serde::{de::Visitor, Deserialize, Serialize};
 use serde_json::Value;
 
-use crate::{api::response::BasicListing, api::ThingFullname};
+use crate::api::{response::BasicListing, FlairId, ThingFullname};
 
 mod moddata;
 pub use moddata::*;
@@ -43,7 +43,7 @@ pub struct SubmissionData {
     /// Link flairs **can** be empty strings.
     pub link_flair_text: Option<String>,
     /// If this post is flaired based on a template, the ID of that template.
-    pub link_flair_template_id: Option<String>,
+    pub link_flair_template_id: Option<FlairId>,
     /// The ID of the post in base-36 form, as used in Reddit's links.
     pub id: String,
     // skipped from_kind
@@ -88,7 +88,7 @@ pub struct SubmissionData {
     /// `None`.
     pub author_flair_css_class: Option<String>,
     /// If the author is flaired based on a template, the ID of that template.
-    pub author_flair_template_id: Option<String>,
+    pub author_flair_template_id: Option<FlairId>,
     /// The number of downvotes (fuzzed; see `score` for further explanation)
     pub downs: f64,
     /// The number of upvotes (fuzzed; see `score` for further explanation)

@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use crate::api::FlairId;
+
 /// Represents the possible flair selections, and the current flair selected.
 #[derive(Debug, Deserialize)]
 pub struct FlairSelection {
@@ -19,7 +21,7 @@ pub struct FlairCurrentChoice {
     /// Position
     pub flair_position: String,
     /// Template ID
-    pub flair_template_id: Option<String>,
+    pub flair_template_id: Option<FlairId>,
     /// Text
     pub flair_text: Option<String>,
 }
@@ -32,7 +34,7 @@ pub struct FlairChoice {
     /// Position
     pub flair_position: String,
     /// Template ID
-    pub flair_template_id: String,
+    pub flair_template_id: FlairId,
     /// Text
     pub flair_text: String,
     /// Whether the text can be edited

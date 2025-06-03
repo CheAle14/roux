@@ -1,7 +1,7 @@
 //! # Subreddit Responses
 use serde::Deserialize;
 
-use crate::api::response::BasicListing;
+use crate::api::{response::BasicListing, FlairId};
 
 mod flairs;
 mod modlog;
@@ -169,7 +169,7 @@ pub struct SubredditData {
     /// If the API user has user flair in this subreddit, and the user flair has been chosen from a predefined template,
     /// this will contain the 36-character UUID of the template. If user flair is not configured,
     /// or is an ad-hoc string with no predefined template, this will be null.
-    pub user_flair_template_id: Option<bool>,
+    pub user_flair_template_id: Option<FlairId>,
     /// The URL to this subreddit's community icon image, if any has been configured.
     /// If no value has been assigned, an empty string is returned.
     pub community_icon: Option<String>,

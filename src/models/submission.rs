@@ -9,7 +9,7 @@ use crate::{
             SubmissionData, SubmissionDataGalleryData, SubmissionDataMediaMetadata,
             SubmissionDataPreview, SubmissionModerationData,
         },
-        Distinguished, ThingFullname,
+        Distinguished, FlairId, ThingFullname,
     },
     builders::form::FormBuilder,
     client::RedditClient,
@@ -70,7 +70,7 @@ impl<T> Submission<T> {
         &self.data.link_flair_text
     }
     /// If this post is flaired based on a template, the ID of that template.
-    pub fn link_flair_template_id(&self) -> Option<&String> {
+    pub fn link_flair_template_id(&self) -> Option<&FlairId> {
         self.data.link_flair_template_id.as_ref()
     }
     /// The ID of the post in base-36 form, as used in Reddit's links.
@@ -151,7 +151,7 @@ impl<T> Submission<T> {
         &self.data.author_flair_css_class
     }
     /// If the author is flaired based on a template, the ID of that template.
-    pub fn author_flair_template_id(&self) -> Option<&String> {
+    pub fn author_flair_template_id(&self) -> Option<&FlairId> {
         self.data.link_flair_template_id.as_ref()
     }
     /// The number of downvotes (fuzzed; see `score` for further explanation)

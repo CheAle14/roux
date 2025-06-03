@@ -1,5 +1,6 @@
 pub mod about;
 pub(crate) mod comment;
+mod flair_id;
 pub mod friend;
 pub(crate) mod inbox;
 pub mod me;
@@ -17,6 +18,7 @@ mod distinguished;
 pub use about::About;
 pub use comment::{APIArticleComments, APILatestComments};
 pub use distinguished::*;
+pub use flair_id::*;
 pub use friend::Friend;
 pub use inbox::APIInbox;
 pub use me::MeData;
