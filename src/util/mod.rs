@@ -11,6 +11,7 @@ pub use option::TimePeriod;
 
 pub(crate) mod ser_enumstr;
 pub(crate) mod ser_map;
+pub(crate) mod serde;
 
 macro_rules! maybe_async_handler {
     ($vis:vis fn $fn_name:ident (&$self:ident, $builder:ident, $handler:ident) $err:ty $body:block) => {
