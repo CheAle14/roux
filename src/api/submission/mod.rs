@@ -71,6 +71,7 @@ pub struct SubmissionData {
     /// Object with different sizes of the preview image.
     pub preview: Option<SubmissionDataPreview>,
     /// The number of comment replies to this submission.
+    #[serde(default)]
     pub num_comments: u64,
     /// The URL to the link thumbnail. This is "self" if this is a self post, or "default" if
     /// a thumbnail is not available.
