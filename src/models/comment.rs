@@ -89,7 +89,7 @@ macro_rules! impl_comment {
             }
 
             /// ??
-            pub fn author_flair_type(&self) -> &String {
+            pub fn author_flair_type(&self) -> &Option<String> {
                 &self.data.common.author_flair_type
             }
 

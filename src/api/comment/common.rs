@@ -21,7 +21,7 @@ pub struct CommonCommentData {
     pub author_flair_richtext: Option<Value>,
     pub author_flair_text: Option<String>,
     pub author_flair_text_color: Option<Value>,
-    pub author_flair_type: String,
+    pub author_flair_type: Option<String>,
     pub author_fullname: ThingFullname,
     pub author_is_blocked: bool,
     pub author_patreon_flair: bool,
