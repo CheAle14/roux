@@ -94,8 +94,8 @@ macro_rules! impl_comment {
             }
 
             /// The fullname of the author of this comment
-            pub fn author_fullname(&self) -> &ThingFullname {
-                &self.data.common.author_fullname
+            pub fn author_fullname(&self) -> Option<&ThingFullname> {
+                self.data.common.author_fullname.as_ref()
             }
 
             /// Whether you have blocked the author of this comment
@@ -104,13 +104,13 @@ macro_rules! impl_comment {
             }
 
             /// ??
-            pub fn author_patreon_flair(&self) -> bool {
-                self.data.common.author_patreon_flair
+            pub fn author_patreon_flair(&self) -> Option<bool> {
+                self.data.common.author_patreon_flair.clone()
             }
 
             /// Whether the author has premium
-            pub fn author_premium(&self) -> bool {
-                self.data.common.author_premium
+            pub fn author_premium(&self) -> Option<bool> {
+                self.data.common.author_premium.clone()
             }
 
             /// ??
