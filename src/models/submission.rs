@@ -311,6 +311,18 @@ impl Submission<crate::client::AuthedClient> {
         self.client.remove(self.name(), spam).await
     }
 
+    /// Locks this submission.
+    #[maybe_async::maybe_async]
+    pub async fn lock(&self) -> Result<(), RouxError> {
+        self.client.lock(self.name()).await
+    }
+
+    /// Unlocks this submission.
+    #[maybe_async::maybe_async]
+    pub async fn unlock(&self) -> Result<(), RouxError> {
+        self.client.unlock(self.name()).await
+    }
+
     /// Distinguishes this submission.
     #[maybe_async::maybe_async]
     pub async fn distinguish(&self, kind: Distinguish) -> Result<(), RouxError> {

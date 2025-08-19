@@ -306,6 +306,22 @@ impl AuthedClient {
         Ok(())
     }
 
+    /// Locks a submission or comment.
+    #[maybe_async::maybe_async]
+    pub async fn lock(&self, fullname: &ThingFullname) -> Result<(), RouxError> {
+        let form = FormBuilder::new().with("id", fullname.full());
+        self.post("api/lock", &form).await?;
+        Ok(())
+    }
+
+    /// Unlocks a submission or comment.
+    #[maybe_async::maybe_async]
+    pub async fn unlock(&self, fullname: &ThingFullname) -> Result<(), RouxError> {
+        let form = FormBuilder::new().with("id", fullname.full());
+        self.post("api/unlock", &form).await?;
+        Ok(())
+    }
+
     /// Distinguishes a 'thing'.
     #[maybe_async::maybe_async]
     pub async fn distinguish(

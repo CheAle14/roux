@@ -443,6 +443,18 @@ macro_rules! impl_comment {
                 self.client.remove(self.name(), spam).await
             }
 
+            /// Locks this comment.
+            #[maybe_async::maybe_async]
+            pub async fn lock(&self) -> Result<(), RouxError> {
+                self.client.lock(self.name()).await
+            }
+
+            /// Unlocks this comment.
+            #[maybe_async::maybe_async]
+            pub async fn unlock(&self) -> Result<(), RouxError> {
+                self.client.unlock(self.name()).await
+            }
+
             /// Distinguishes this comment.
             #[maybe_async::maybe_async]
             pub async fn distinguish(
