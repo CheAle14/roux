@@ -18,6 +18,10 @@ impl<'a> FormBuilder<'a> {
         self
     }
 
+    pub fn with_bool(self, key: impl Into<Cow<'a, str>>, value: bool) -> Self {
+        self.with(key, if value { "true" } else { "false" })
+    }
+
     pub fn add(&mut self, key: impl Into<Cow<'a, str>>, value: impl Into<Cow<'a, str>>) {
         self.values.push((key.into(), value.into()));
     }

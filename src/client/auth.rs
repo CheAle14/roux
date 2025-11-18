@@ -300,7 +300,7 @@ impl AuthedClient {
     #[maybe_async::maybe_async]
     pub async fn remove(&self, thing_id: &ThingFullname, spam: bool) -> Result<(), RouxError> {
         let form = FormBuilder::new()
-            .with("spam", if spam { "true" } else { "false" })
+            .with_bool("spam", spam)
             .with("id", thing_id.full());
         self.post("api/remove", &form).await?;
         Ok(())
@@ -339,7 +339,7 @@ impl AuthedClient {
 
         let form = FormBuilder::new()
             .with("how", how)
-            .with("sticky", if sticky { "true" } else { "false" })
+            .with_bool("sticky", sticky)
             .with("id", thing.full());
 
         self.post("api/distinguish", &form).await?;
