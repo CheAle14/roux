@@ -3,6 +3,7 @@ pub(crate) mod comment;
 mod flair_id;
 pub mod friend;
 pub(crate) mod inbox;
+pub mod live;
 pub mod me;
 pub mod moderator;
 pub mod overview;

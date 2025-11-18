@@ -7,13 +7,17 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::api::comment::APICreatedComments;
+use crate::api::live::LiveThreadData;
 use crate::api::me::MeData;
-use crate::api::response::{BasicListing, LazyThingCreatedData, MultipleBasicThingsData};
+use crate::api::response::{
+    BasicListing, BasicThing, LazyThingCreatedData, MultipleBasicThingsData,
+};
 use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingFullname};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::client::{inner::ClientInner, req::*};
 use crate::models::inbox::Inbox;
+use crate::models::live::LiveThread;
 use crate::models::submission::Submissions;
 use crate::models::{
     CreatedComment, CreatedCommentWithLinkInfo, Distinguish, FromClientAndData, Listing, Message,
@@ -395,6 +399,84 @@ impl AuthedClient {
         };
 
         self.post("api/set_subreddit_sticky", &body).await?;
+        Ok(())
+    }
+
+    /// Fetches information about the live thread.
+    #[maybe_async::maybe_async]
+    pub async fn about_live_thread(&self, id: &str) -> Result<LiveThread<Self>, RouxError> {
+        let response: BasicThing<LiveThreadData> =
+            self.get_json(format!("api/live/{id}/about")).await?;
+
+        Ok(LiveThread::new(self.clone(), response.data))
+    }
+
+    /// Creates a new live thread and returns its ID.
+    #[maybe_async::maybe_async]
+    pub async fn create_live_thread(
+        &self,
+        title: &str,
+        description: &str,
+        nsfw: bool,
+        resources: &str,
+    ) -> Result<String, RouxError> {
+        let form = FormBuilder::new()
+            .with("title", title)
+            .with("description", description)
+            .with("resources", resources)
+            .with_bool("nsfw", nsfw);
+
+        #[derive(serde::Deserialize)]
+        struct ResponseData {
+            id: String,
+        }
+
+        let response: ResponseData = self.post_with_response("api/live/create", &form).await?;
+
+        Ok(response.id)
+    }
+
+    /// Invites a contributor with full permissions to the live thread.
+    #[maybe_async::maybe_async]
+    pub async fn invite_live_thread_contributor(
+        &self,
+        id: &str,
+        username: &str,
+    ) -> Result<(), RouxError> {
+        let form = FormBuilder::new()
+            .with("type", "liveupdate_contributor_invite")
+            .with("name", username)
+            .with("permissions", "+all");
+
+        let resp = self
+            .post(format!("/api/live/{id}/invite_contributor"), &form)
+            .await?;
+
+        let text = resp.text().await?;
+
+        std::fs::write("live_invite.json", text).unwrap();
+
+        Ok(())
+    }
+
+    /// Posts an update to the live thread.
+    #[maybe_async::maybe_async]
+    pub async fn update_live_thread(&self, id: &str, text: &str) -> Result<(), RouxError> {
+        let form = FormBuilder::new().with("body", text);
+
+        self.post(format!("/api/live/{id}/update"), &form).await?;
+
+        Ok(())
+    }
+
+    /// Closes a live thread, preventing further updates.
+    #[maybe_async::maybe_async]
+    pub async fn close_live_thread(&self, id: &str) -> Result<(), RouxError> {
+        let form = FormBuilder::new();
+
+        self.post(format!("/api/live/{id}/close_thread"), &form)
+            .await?;
+
         Ok(())
     }
 

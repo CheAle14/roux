@@ -19,6 +19,8 @@ pub use inbox::Message;
 mod distinguish;
 pub use distinguish::Distinguish;
 
+pub mod live;
+
 pub(crate) trait FromClientAndData<Client, Data> {
     fn new(client: Client, data: Data) -> Self;
 }

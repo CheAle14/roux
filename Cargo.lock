@@ -795,7 +795,7 @@ dependencies = [
 
 [[package]]
 name = "roux"
-version = "2.3.39"
+version = "2.3.40"
 dependencies = [
  "dotenv",
  "html-escape",
