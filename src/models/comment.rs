@@ -59,7 +59,7 @@ macro_rules! impl_comment {
             }
 
             /// The username of the author of this comment.
-            pub fn author(&self) -> &String {
+            pub fn author(&self) -> &str {
                 &self.data.common.author
             }
 
@@ -129,12 +129,12 @@ macro_rules! impl_comment {
             }
 
             /// The text content of this comment
-            pub fn body(&self) -> &String {
+            pub fn body(&self) -> &str {
                 &self.data.common.body
             }
 
             /// The HTML encoded content of this comment.
-            pub fn body_html(&self) -> &String {
+            pub fn body_html(&self) -> &str {
                 &self.data.common.body_html
             }
 
@@ -214,7 +214,7 @@ macro_rules! impl_comment {
             }
 
             /// The ID of this comment
-            pub fn id(&self) -> &String {
+            pub fn id(&self) -> &str {
                 &self.data.common.id
             }
 
@@ -287,7 +287,7 @@ macro_rules! impl_comment {
             }
 
             /// The permalink to this comment
-            pub fn permalink(&self) -> &String {
+            pub fn permalink(&self) -> &str {
                 &self.data.common.permalink
             }
 
@@ -344,7 +344,7 @@ macro_rules! impl_comment {
             }
 
             /// The name of the subreddit that this comment was made in.
-            pub fn subreddit(&self) -> &String {
+            pub fn subreddit(&self) -> &str {
                 &self.data.common.subreddit
             }
 
@@ -354,13 +354,13 @@ macro_rules! impl_comment {
             }
 
             /// The name of the subreddit prefixed with `/r/`
-            pub fn subreddit_name_prefixed(&self) -> &String {
+            pub fn subreddit_name_prefixed(&self) -> &str {
                 &self.data.common.subreddit_name_prefixed
             }
 
             /// The subreddit type
             /// TODO: make this an enum
-            pub fn subreddit_type(&self) -> &String {
+            pub fn subreddit_type(&self) -> &str {
                 &self.data.common.subreddit_type
             }
 
@@ -472,19 +472,19 @@ macro_rules! impl_comment_with_link_info {
     ($name:ident) => {
         impl<T> $name<T> {
             /// Author of the link post this comment is under.
-            pub fn link_author(&self) -> &String {
+            pub fn link_author(&self) -> &str {
                 &self.data.link_author
             }
             /// Permalink to the post this comment is under.
-            pub fn link_permalink(&self) -> &String {
+            pub fn link_permalink(&self) -> &str {
                 &self.data.link_permalink
             }
             /// Title of the post this comment is under.
-            pub fn link_title(&self) -> &String {
+            pub fn link_title(&self) -> &str {
                 &self.data.link_title
             }
             /// Link to the content of the post this comment is under.
-            pub fn link_url(&self) -> &String {
+            pub fn link_url(&self) -> &str {
                 &self.data.link_url
             }
         }

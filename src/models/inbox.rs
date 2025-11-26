@@ -14,11 +14,11 @@ pub struct Message<T> {
 
 impl<T> Message<T> {
     /// ID
-    pub fn id(&self) -> &String {
+    pub fn id(&self) -> &str {
         &self.data.id
     }
     /// Subject
-    pub fn subject(&self) -> &String {
+    pub fn subject(&self) -> &str {
         &self.data.subject
     }
     /// Was comment
@@ -26,8 +26,8 @@ impl<T> Message<T> {
         &self.data.was_comment
     }
     /// Author
-    pub fn author(&self) -> &Option<String> {
-        &self.data.author
+    pub fn author(&self) -> Option<&str> {
+        self.data.author.as_ref().map(|v| v.as_str())
     }
     /// Parent ID
     pub fn parent_id(&self) -> &Option<ThingFullname> {
@@ -42,19 +42,19 @@ impl<T> Message<T> {
         &self.data.new
     }
     /// ???
-    pub fn r#type(&self) -> &String {
+    pub fn r#type(&self) -> &str {
         &self.data.r#type
     }
     /// Body
-    pub fn body(&self) -> &String {
+    pub fn body(&self) -> &str {
         &self.data.body
     }
     /// Dest
-    pub fn dest(&self) -> &String {
+    pub fn dest(&self) -> &str {
         &self.data.dest
     }
     /// Body HTML
-    pub fn body_html(&self) -> &String {
+    pub fn body_html(&self) -> &str {
         &self.data.body_html
     }
     /// Name
@@ -70,7 +70,7 @@ impl<T> Message<T> {
         &self.data.created_utc
     }
     /// Context
-    pub fn context(&self) -> &String {
+    pub fn context(&self) -> &str {
         &self.data.context
     }
     /// The first message in this reply chain.
