@@ -93,6 +93,15 @@ macro_rules! impl_comment {
                 &self.data.common.author_flair_type
             }
 
+            /// The author's flair's template id.
+            pub fn author_flair_template_id(&self) -> Option<&str> {
+                self.data
+                    .common
+                    .author_flair_template_id
+                    .as_ref()
+                    .map(|v| v.as_str())
+            }
+
             /// The fullname of the author of this comment
             pub fn author_fullname(&self) -> Option<&ThingFullname> {
                 self.data.common.author_fullname.as_ref()
