@@ -82,9 +82,19 @@ impl ThingFullname {
         self.0
     }
 
+    /// Creates a fullname representing a comment.
+    pub fn from_comment_id(comment_id: &str) -> Self {
+        Self(format!("t1_{comment_id}"))
+    }
+
+    /// Creates a fullname representing a submission.
+    pub fn from_submission_id(comment_id: &str) -> Self {
+        Self(format!("t3_{comment_id}"))
+    }
+
     /// Attempts to parse the thing ID from the submission permalink
     ///
-    /// URL is expected to be in the format:  
+    /// URL is expected to be in the format:
     ///
     /// `https://www.reddit.com/r/SUBREDDIT/comments/THING_ID[/URL_FRIENDLY_TITLE/]`
     pub fn from_submission_link(url: &str) -> Option<Self> {
