@@ -11,7 +11,7 @@ pub(crate) mod saved;
 pub use saved::Saved;
 
 pub(crate) mod comment;
-pub use comment::{ArticleComment, CreatedComment, CreatedCommentWithLinkInfo, LatestComment};
+pub use comment::*;
 
 pub(crate) mod inbox;
 pub use inbox::Message;

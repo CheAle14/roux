@@ -1,11 +1,12 @@
 use crate::{
     api::{
         comment::{
-            article::ArticleCommentData,
+            article::{ArticleCommentData, ArticleCommentOrMoreComments, MoreCommentData},
             created::{CreatedCommentData, CreatedCommentWithLinkInfoData},
             latest::LatestCommentData,
+            replies::ArticleReplies,
         },
-        Distinguished, MaybeReplies, ThingFullname,
+        Distinguished, ThingFullname,
     },
     builders::form::FormBuilder,
     client::{AuthedClient, RedditClient},
@@ -17,7 +18,7 @@ use serde_json::Value;
 use super::Listing;
 
 pub(crate) type LatestComments<T> = Listing<LatestComment<T>>;
-pub(crate) type ArticleComments<T> = Listing<ArticleComment<T>>;
+pub(crate) type ArticleComments<T> = Listing<ArticleCommentOrMore<T>>;
 
 macro_rules! impl_comment {
     ($name:ident, $data_name:ident, $docs:literal) => {
@@ -310,13 +311,6 @@ macro_rules! impl_comment {
                 &self.data.common.removed
             }
 
-            /// The replies to this comment.
-            ///
-            /// This always appears to be an empty string for [`LatestComment`](crate::models::comment::LatestComment).
-            pub fn replies(&self) -> &MaybeReplies {
-                &self.data.common.replies
-            }
-
             /// ??
             pub fn report_reasons(&self) -> &Option<Vec<Value>> {
                 &self.data.common.report_reasons
@@ -509,8 +503,39 @@ impl_comment_with_link_info!(LatestComment);
 impl_comment_with_link_info!(CreatedCommentWithLinkInfo);
 
 impl<T> ArticleComment<T> {
+    /// Gets the underlying raw data.
+    pub fn raw_data(&self) -> &ArticleCommentData {
+        &self.data
+    }
+
     /// How deep this comment is beneath the post.
     pub fn depth(&self) -> i32 {
         self.data.depth
+    }
+
+    /// The replies to this comment.
+    pub fn replies(&self) -> &ArticleReplies {
+        &self.data.replies
+    }
+}
+
+/// Either a comment or a marker that more need to be loaded.
+pub enum ArticleCommentOrMore<T> {
+    /// The comment
+    Comment(ArticleComment<T>),
+    /// The marker
+    More(MoreCommentData),
+}
+
+impl<Client> super::FromClientAndData<Client, ArticleCommentOrMoreComments>
+    for ArticleCommentOrMore<Client>
+{
+    fn new(client: Client, data: ArticleCommentOrMoreComments) -> Self {
+        match data {
+            ArticleCommentOrMoreComments::Comment(data) => {
+                Self::Comment(ArticleComment::new(client, data))
+            }
+            ArticleCommentOrMoreComments::More(data) => Self::More(data),
+        }
     }
 }

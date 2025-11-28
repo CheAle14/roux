@@ -7,7 +7,6 @@ pub mod live;
 pub mod me;
 pub mod moderator;
 pub mod overview;
-pub mod reply;
 pub mod response;
 pub mod saved;
 pub mod submission;
@@ -17,7 +16,10 @@ pub mod thing_fullname;
 mod distinguished;
 
 pub use about::About;
-pub use comment::{APIArticleComments, APILatestComments};
+pub use comment::{
+    replies::ArticleReplies, APIArticleComments, APILatestComments, ArticleCommentData,
+    ArticleCommentOrMoreComments,
+};
 pub use distinguished::*;
 pub use flair_id::*;
 pub use friend::Friend;
@@ -25,7 +27,6 @@ pub use inbox::APIInbox;
 pub use me::MeData;
 pub use moderator::Moderators;
 pub use overview::Overview;
-pub use reply::{MaybeReplies, Replies};
 pub use saved::APISaved;
 pub use submission::APISubmissions;
 pub use subreddit::SubredditData;

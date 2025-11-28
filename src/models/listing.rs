@@ -1,4 +1,7 @@
-use crate::api::{response::BasicListing, response::Listing as APIListing, ThingFullname};
+use crate::api::{
+    response::{BasicListing, Listing as APIListing, OuterBasicListing},
+    ThingFullname,
+};
 
 use super::FromClientAndData;
 
@@ -17,7 +20,7 @@ pub struct Listing<T> {
 }
 
 impl<TModel> Listing<TModel> {
-    pub(crate) fn new_converter<TApi, F>(listing: BasicListing<TApi>, convertor: F) -> Self
+    pub(crate) fn new_converter<TApi, F>(listing: OuterBasicListing<TApi>, convertor: F) -> Self
     where
         F: Fn(TApi) -> TModel,
     {
@@ -29,10 +32,7 @@ impl<TModel> Listing<TModel> {
             children,
         } = listing.data;
 
-        let children: Vec<_> = children
-            .into_iter()
-            .map(|basic| convertor(basic.data))
-            .collect();
+        let children: Vec<_> = children.into_iter().map(|basic| convertor(basic)).collect();
 
         Self {
             before,
@@ -48,7 +48,18 @@ impl<TModel> Listing<TModel> {
         TClient: Clone,
         TModel: FromClientAndData<TClient, TApi>,
     {
-        Self::new_converter(listing, |data| TModel::new(client.clone(), data))
+        Self::new_converter(listing, |thing| TModel::new(client.clone(), thing.data))
+    }
+
+    pub(crate) fn new_outer<TApi, TClient>(
+        listing: OuterBasicListing<TApi>,
+        client: TClient,
+    ) -> Self
+    where
+        TClient: Clone,
+        TModel: FromClientAndData<TClient, TApi>,
+    {
+        Self::new_converter(listing, |thing| TModel::new(client.clone(), thing))
     }
 }
 

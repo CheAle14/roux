@@ -10,7 +10,7 @@ use crate::models::comment::ArticleComments;
 use crate::models::submission::Submissions;
 use crate::models::{Listing, Submission};
 use crate::util::url::build_subreddit;
-use crate::util::{maybe_async_handler, RouxError};
+use crate::util::RouxError;
 
 use super::endpoint::EndpointBuilder;
 
@@ -91,8 +91,8 @@ pub trait RedditClient {
         .await
     }
 
-    /// Post the data, parsing the response as a [`PostResponse<T>`](crate::api::response::PostResponse).  
-    /// If any errors are present, they are raised as [`RouxError::RedditError`](crate::util::error::RouxError).  
+    /// Post the data, parsing the response as a [`PostResponse<T>`](crate::api::response::PostResponse).
+    /// If any errors are present, they are raised as [`RouxError::RedditError`](crate::util::error::RouxError).
     /// Otherwise, the data is unwrapped and returned.
     async fn post_with_response<TReq: Serialize, TResp: DeserializeOwned>(
         &self,
@@ -170,10 +170,10 @@ pub trait RedditClient {
             endpoint.with_query("limit", limit.to_string());
         }
 
-        let comments: crate::api::comment::ArticleCommentsResponse =
+        let response: crate::api::comment::ArticleCommentsResponse =
             self.get_json(endpoint).await?;
 
-        let conv = Listing::new(comments.comments, self.clone());
+        let conv = Listing::new_outer(response.comments, self.clone());
 
         Ok(conv)
     }

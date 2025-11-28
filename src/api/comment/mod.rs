@@ -4,10 +4,14 @@ pub mod article;
 pub mod common;
 pub mod created;
 pub mod latest;
+pub mod replies;
 
 use super::response::BasicListing;
 
-pub use article::{ArticleCommentsResponse, ArticleCommentsResponseWithoutComments};
+pub use article::{
+    ArticleCommentData, ArticleCommentOrMoreComments, ArticleCommentsResponse,
+    ArticleCommentsResponseWithoutComments,
+};
 /// list of latest comment data
 pub type APILatestComments = BasicListing<latest::LatestCommentData>;
 /// list of article comment data

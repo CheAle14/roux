@@ -7,7 +7,7 @@ use crate::api::ThingFullname;
 
 /// Basic structure of a Reddit response.
 /// See: <https://github.com/reddit-archive/reddit/wiki/JSON>
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, PartialEq, Deserialize, Debug)]
 pub struct BasicThing<T> {
     /// An identifier that specifies the type of object that this is.
     pub kind: Option<String>,
@@ -17,7 +17,7 @@ pub struct BasicThing<T> {
 }
 
 /// JSON list response.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, PartialEq, Deserialize, Default, Debug)]
 pub struct Listing<T> {
     /// Modhash
     pub modhash: Option<String>,
@@ -92,6 +92,9 @@ impl<T> MultipleBasicThingsData<T> {
         self.things.into_iter().next().unwrap().data
     }
 }
+
+/// A basic-thing listing, but whose inner type is not wrapped in a basic thing.
+pub type OuterBasicListing<T> = BasicThing<Listing<T>>;
 
 /// Often times a basic thing will have this structure.
 pub type BasicListing<T> = BasicThing<Listing<BasicThing<T>>>;
