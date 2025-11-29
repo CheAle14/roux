@@ -70,8 +70,8 @@ macro_rules! impl_comment {
             }
 
             /// ??
-            pub fn author_flair_css_class(&self) -> &Option<Value> {
-                &self.data.common.author_flair_css_class
+            pub fn author_flair_css_class(&self) -> Option<&str> {
+                self.data.common.author_flair_css_class.as_ref().map(|v| v.as_str())
             }
 
             /// ??

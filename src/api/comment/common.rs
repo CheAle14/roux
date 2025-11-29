@@ -17,7 +17,7 @@ pub struct CommonCommentData {
     pub associated_award: Option<Value>,
     pub author: String,
     pub author_flair_background_color: Option<Value>,
-    pub author_flair_css_class: Option<Value>,
+    pub author_flair_css_class: Option<String>,
     pub author_flair_richtext: Option<Value>,
     pub author_flair_text: Option<String>,
     pub author_flair_text_color: Option<Value>,
