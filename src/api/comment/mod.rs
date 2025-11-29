@@ -9,8 +9,8 @@ pub mod replies;
 use super::response::BasicListing;
 
 pub use article::{
-    ArticleCommentData, ArticleCommentOrMoreComments, ArticleCommentsResponse,
-    ArticleCommentsResponseWithoutComments,
+    ArticleAndCommentsResponse, ArticleCommentData, ArticleCommentOrMoreComments,
+    ArticleCommentsResponse, ArticleCommentsResponseWithoutComments,
 };
 /// list of latest comment data
 pub type APILatestComments = BasicListing<latest::LatestCommentData>;

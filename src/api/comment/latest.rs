@@ -11,7 +11,7 @@ pub struct LatestCommentData {
     pub link_title: String,
     pub link_url: String,
     #[serde(default)]
-    pub num_comments: i32,
+    pub num_comments: u64,
     pub over_18: bool,
     pub quarantine: bool,
 }

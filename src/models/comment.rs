@@ -10,7 +10,7 @@ use crate::{
     },
     builders::form::FormBuilder,
     client::{AuthedClient, RedditClient},
-    models::Distinguish,
+    models::{Distinguish, Submission},
     util::RouxError,
 };
 use serde_json::Value;
@@ -71,7 +71,11 @@ macro_rules! impl_comment {
 
             /// ??
             pub fn author_flair_css_class(&self) -> Option<&str> {
-                self.data.common.author_flair_css_class.as_ref().map(|v| v.as_str())
+                self.data
+                    .common
+                    .author_flair_css_class
+                    .as_ref()
+                    .map(|v| v.as_str())
             }
 
             /// ??
@@ -501,6 +505,27 @@ impl_comment!(CreatedCommentWithLinkInfo, CreatedCommentWithLinkInfoData, "Repre
 
 impl_comment_with_link_info!(LatestComment);
 impl_comment_with_link_info!(CreatedCommentWithLinkInfo);
+
+impl<T> ArticleComment<T> {
+    /// Converts this article comment into one that would've been retrieved through /r/SUB/comments.json
+    pub fn into_latest(self, submission: &Submission<T>) -> LatestComment<T> {
+        let Self { client, data } = self;
+
+        LatestComment {
+            client,
+            data: LatestCommentData {
+                common: data.common,
+                link_author: submission.author().to_owned(),
+                link_permalink: submission.permalink().to_owned(),
+                link_title: submission.title().to_owned(),
+                link_url: submission.url().clone().unwrap_or_default(),
+                num_comments: submission.num_comments(),
+                over_18: submission.over_18(),
+                quarantine: submission.quarantine(),
+            },
+        }
+    }
+}
 
 impl<T> ArticleComment<T> {
     /// Gets the underlying raw data.

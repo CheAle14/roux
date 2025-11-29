@@ -22,20 +22,57 @@ pub struct ArticleCommentData {
 }
 
 #[derive(Debug)]
+pub struct ArticleAndCommentsResponse {
+    pub submission: SubmissionData,
+    pub comments: BasicListing<ArticleCommentData>,
+}
+
+impl<'de> Deserialize<'de> for ArticleAndCommentsResponse {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        type Encoded = (
+            BasicListing<SubmissionData>,
+            BasicListing<ArticleCommentData>,
+        );
+
+        let (submission, comments) = Encoded::deserialize(deserializer)?;
+
+        let submission = submission
+            .data
+            .children
+            .into_iter()
+            .next()
+            .ok_or_else(|| {
+                serde::de::Error::custom(
+                    "expected article comments submission array to be non-empty",
+                )
+            })?
+            .data;
+
+        Ok(ArticleAndCommentsResponse {
+            submission,
+            comments,
+        })
+    }
+}
+
+#[derive(Debug)]
 pub struct ArticleCommentsResponse {
     pub comments: OuterBasicListing<ArticleCommentOrMoreComments>,
 }
-
-type Encoded = (
-    serde::de::IgnoredAny,
-    OuterBasicListing<ArticleCommentOrMoreComments>,
-);
 
 impl<'de> Deserialize<'de> for ArticleCommentsResponse {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
+        type Encoded = (
+            serde::de::IgnoredAny,
+            OuterBasicListing<ArticleCommentOrMoreComments>,
+        );
+
         let (_, comments) = Encoded::deserialize(deserializer)?;
         Ok(ArticleCommentsResponse { comments })
     }

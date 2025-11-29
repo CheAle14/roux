@@ -370,3 +370,170 @@ impl<T> FromClientAndData<T, SubmissionData> for Submission<T> {
         Self { client, data }
     }
 }
+
+/// An extracted representation of a submission link.
+///
+/// This may include a title, and if so may further include a comment ID.
+///
+/// ```
+/// # use roux::models::SubmissionLinkInfo;
+///
+/// assert_eq!(
+///    SubmissionLinkInfo::parse(
+///        "https://www.reddit.com/r/sub123/comments/post321/some_title_here/comment456"
+///    ),
+///    Some(SubmissionLinkInfo {
+///        subreddit: "sub123",
+///        post_id: "post321",
+///        title: Some("some_title_here"),
+///        comment_id: Some("comment456")
+///    })
+/// );
+///
+///
+/// assert_eq!(
+///     SubmissionLinkInfo::parse("https://www.reddit.com/r/sub123/comments/post321/"),
+///     Some(SubmissionLinkInfo {
+///         subreddit: "sub123",
+///         post_id: "post321",
+///         title: None,
+///         comment_id: None
+///     })
+/// );
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SubmissionLinkInfo<'a> {
+    /// The subreddit the submission is in.
+    pub subreddit: &'a str,
+    /// The base36 ID of the submission.
+    pub post_id: &'a str,
+    /// The URL-safe title of the submission.
+    pub title: Option<&'a str>,
+    /// The base36 ID of a particular comment that this link focuses on.
+    pub comment_id: Option<&'a str>,
+}
+
+fn split_once_or_rest<'a>(text: &'a str, pattern: char) -> (&'a str, &'a str) {
+    match text.split_once(pattern) {
+        Some(retn) => retn,
+        None => (text, ""),
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub enum ParseSubmissionLinkError {
+    NoRSlash,
+    NoSubreddit,
+    NoComments,
+}
+
+impl std::error::Error for ParseSubmissionLinkError {}
+
+impl std::fmt::Display for ParseSubmissionLinkError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ParseSubmissionLinkError::NoRSlash => f.write_str("url missing literal '/r/'"),
+            ParseSubmissionLinkError::NoSubreddit => f.write_str("url missing subreddit"),
+            ParseSubmissionLinkError::NoComments => f.write_str("url missing literal '/comments/'"),
+        }
+    }
+}
+
+impl<'a> SubmissionLinkInfo<'a> {
+    /// Parses a submission link, which may optional include a title and/or comment ID.
+    pub fn parse(url: &'a str) -> Result<Self, ParseSubmissionLinkError> {
+        use ParseSubmissionLinkError::*;
+
+        // url = https://www.reddit.com/r/SUBREDDIT/comments/POST_ID/URL_FRIENDLY_TITLE/COMMENT_ID
+        let (_, rest) = url.split_once("/r/").ok_or(NoRSlash)?;
+        // rest = SUBREDDIT/comments/POST_ID/URL_FRIENDLY_TITLE/COMMENT_ID
+        let (subreddit, rest) = rest.split_once('/').ok_or(NoSubreddit)?;
+        // rest = comments/POST_ID/URL_FRIENDLY_TITLE/COMMENT_ID
+        let (_, rest) = rest.split_once('/').ok_or(NoComments)?;
+        // rest = POST_ID(/URL_FRIENDLY_TITLE/COMMENT_ID)?
+
+        let (post_id, rest) = split_once_or_rest(rest, '/');
+        // rest = (URL_FRIENDLY_TITLE/COMMENT_ID)?
+        let (title, rest) = split_once_or_rest(rest, '/');
+        // rest = (COMMENT_ID)?
+        let (comment_id, _) = split_once_or_rest(rest, '/');
+
+        Ok(Self {
+            subreddit,
+            post_id,
+            title: if title.is_empty() { None } else { Some(title) },
+            comment_id: if comment_id.is_empty() {
+                None
+            } else {
+                Some(comment_id)
+            },
+        })
+    }
+
+    /// Creates a fullname for this post
+    pub fn post_fullname(&self) -> ThingFullname {
+        ThingFullname::from_submission_id(self.post_id)
+    }
+
+    /// If present, creates a fullname to the comment linked to.
+    pub fn comment_fullname(&self) -> Option<ThingFullname> {
+        self.comment_id.map(|id| ThingFullname::from_comment_id(id))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SubmissionLinkInfo;
+
+    #[test]
+    pub fn extracts_submission_info() {
+        assert_eq!(
+            SubmissionLinkInfo::parse(
+                "https://www.reddit.com/r/discordapp/comments/1p9p6t5/linux_gpu_crashes_when_someone_looks_at_my_camera/"
+            ),
+            Ok(SubmissionLinkInfo {
+                subreddit: "discordapp",
+                post_id: "1p9p6t5",
+                title: Some("linux_gpu_crashes_when_someone_looks_at_my_camera"),
+                comment_id: None
+            })
+        );
+
+        assert_eq!(
+            SubmissionLinkInfo::parse(
+                "https://www.reddit.com/r/sub123/comments/post321/some_title_here/"
+            ),
+            Ok(SubmissionLinkInfo {
+                subreddit: "sub123",
+                post_id: "post321",
+                title: Some("some_title_here"),
+                comment_id: None
+            })
+        );
+
+        assert_eq!(
+            SubmissionLinkInfo::parse(
+                "https://www.reddit.com/r/sub123/comments/post321/some_title_here"
+            ),
+            Ok(SubmissionLinkInfo {
+                subreddit: "sub123",
+                post_id: "post321",
+                title: Some("some_title_here"),
+                comment_id: None
+            })
+        );
+
+        assert_eq!(
+            SubmissionLinkInfo::parse("https://www.reddit.com/r/sub123/comments/post321/"),
+            Ok(SubmissionLinkInfo {
+                subreddit: "sub123",
+                post_id: "post321",
+                title: None,
+                comment_id: None
+            })
+        );
+
+        assert!(SubmissionLinkInfo::parse("https://www.reddit.com/r/sub123/comments").is_err());
+    }
+}

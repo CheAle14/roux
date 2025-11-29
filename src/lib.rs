@@ -1,3 +1,4 @@
+#![allow(async_fn_in_trait)]
 #![deny(missing_docs)]
 
 //! # roux.rs

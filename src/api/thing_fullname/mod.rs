@@ -88,8 +88,8 @@ impl ThingFullname {
     }
 
     /// Creates a fullname representing a submission.
-    pub fn from_submission_id(comment_id: &str) -> Self {
-        Self(format!("t3_{comment_id}"))
+    pub fn from_submission_id(submission_id: &str) -> Self {
+        Self(format!("t3_{submission_id}"))
     }
 
     /// Attempts to parse the thing ID from the submission permalink

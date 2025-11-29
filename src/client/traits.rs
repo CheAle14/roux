@@ -5,10 +5,10 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::api::response::PostResponse;
-use crate::api::{APISubmissions, ThingFullname};
+use crate::api::{APISubmissions, ArticleCommentData, ThingFullname};
 use crate::models::comment::ArticleComments;
 use crate::models::submission::Submissions;
-use crate::models::{Listing, Submission};
+use crate::models::{ArticleComment, FromClientAndData, Listing, Submission, SubmissionLinkInfo};
 use crate::util::url::build_subreddit;
 use crate::util::RouxError;
 
@@ -147,6 +147,39 @@ pub trait RedditClient {
         Subreddits(self.clone())
     }
 
+    /// Fetches the comments in a submission starting at a particular comment.
+    #[maybe_async::maybe_async]
+    async fn article_and_comments(
+        &self,
+        subreddit: &str,
+        post_id: &str,
+        comment_id: &str,
+        depth: Option<u32>,
+        limit: Option<u32>,
+    ) -> Result<(Submission<Self>, Listing<ArticleComment<Self>>), RouxError>
+    where
+        Self: Sized + Clone,
+    {
+        let mut endpoint =
+            build_subreddit(subreddit).join(format!("comments/{post_id}/-/{comment_id}",));
+
+        if let Some(depth) = depth {
+            endpoint.with_query("depth", depth.to_string());
+        }
+
+        if let Some(limit) = limit {
+            endpoint.with_query("limit", limit.to_string());
+        }
+
+        let response: crate::api::comment::ArticleAndCommentsResponse =
+            self.get_json(endpoint).await?;
+
+        let submission = Submission::new(self.clone(), response.submission);
+        let comments = Listing::new(response.comments, self.clone());
+
+        Ok((submission, comments))
+    }
+
     /// Get comments from article.
     #[maybe_async::maybe_async]
     async fn article_comments(
@@ -209,6 +242,20 @@ pub trait RedditClient {
             .ok_or_else(|| RouxError::credentials_not_set())?;
 
         let post = self.get_submissions(&[&thing_id]).await?;
+        let post = post.into_iter().next().unwrap();
+        Ok(post)
+    }
+
+    /// Gets a submission by its permalink
+    #[maybe_async::maybe_async]
+    async fn get_submission_by_info(
+        &self,
+        info: &SubmissionLinkInfo<'_>,
+    ) -> Result<Submission<Self>, RouxError>
+    where
+        Self: Sized + Clone,
+    {
+        let post = self.get_submissions(&[&info.post_fullname()]).await?;
         let post = post.into_iter().next().unwrap();
         Ok(post)
     }
