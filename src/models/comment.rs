@@ -9,7 +9,7 @@ use crate::{
         Distinguished, ThingFullname,
     },
     builders::form::FormBuilder,
-    client::{AuthedClient, RedditClient},
+    client::{AuthedClient, RedditClient, RemoveReason},
     models::{Distinguish, Submission},
     util::RouxError,
 };
@@ -448,6 +448,17 @@ macro_rules! impl_comment {
             #[maybe_async::maybe_async]
             pub async fn remove(&self, spam: bool) -> Result<(), RouxError> {
                 self.client.remove(self.name(), spam).await
+            }
+
+            /// Removes this comment with the provided reason.
+            #[maybe_async::maybe_async]
+            pub async fn remove_with_reason(
+                &self,
+                spam: bool,
+                reason: RemoveReason<'_>,
+            ) -> Result<(), RouxError> {
+                self.remove(spam).await?;
+                self.client.add_removal_reason(self.name(), reason).await
             }
 
             /// Locks this comment.

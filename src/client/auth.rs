@@ -480,6 +480,50 @@ impl AuthedClient {
         Ok(())
     }
 
+    /// Adds a removal reason for the specified comment or submission.
+    ///
+    /// It must already be removed first.
+    #[maybe_async::maybe_async]
+    pub async fn add_removal_reason(
+        &self,
+        thing: &ThingFullname,
+        reason: RemoveReason<'_>,
+    ) -> Result<(), RouxError> {
+        let (mod_note, reason_id) = match reason {
+            RemoveReason::ModNote(n) => (n, None),
+            RemoveReason::ReasonId(id) => ("", Some(id)),
+            RemoveReason::Both { note, reason_id } => (note, Some(reason_id)),
+        };
+
+        #[derive(Serialize)]
+        struct Request<'a> {
+            item_ids: [&'a str; 1],
+            mod_note: &'a str,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            reason_id: Option<&'a str>,
+        }
+
+        let request = Request {
+            item_ids: [thing.full()],
+            mod_note,
+            reason_id,
+        };
+
+        let json = serde_json::to_string(&request).expect("can serialize");
+
+        #[derive(Serialize)]
+        struct JsonForm {
+            json: String,
+        }
+
+        let form = JsonForm { json };
+
+        self.post("/api/v1/modactions/removal_reasons", &form)
+            .await?;
+
+        Ok(())
+    }
+
     /// Logout
     #[maybe_async::maybe_async]
     pub async fn logout(self) -> Result<(), RouxError> {
@@ -537,4 +581,19 @@ pub enum SelectFlairTarget {
     Link(ThingFullname),
     /// A user, by their username
     User(String),
+}
+
+/// Reason for a comment or submission being removed.
+pub enum RemoveReason<'a> {
+    /// A custom note shown only to moderators
+    ModNote(&'a str),
+    /// The ID of a removal reason in the subreddit
+    ReasonId(&'a str),
+    /// Both a custom note and removal reason
+    Both {
+        /// The custom note
+        note: &'a str,
+        /// The removal reason ID
+        reason_id: &'a str,
+    },
 }

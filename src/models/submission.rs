@@ -12,7 +12,7 @@ use crate::{
         Distinguished, FlairId, ThingFullname,
     },
     builders::form::FormBuilder,
-    client::RedditClient,
+    client::{RedditClient, RemoveReason},
     RouxError,
 };
 
@@ -309,6 +309,17 @@ impl Submission<crate::client::AuthedClient> {
     #[maybe_async::maybe_async]
     pub async fn remove(&self, spam: bool) -> Result<(), RouxError> {
         self.client.remove(self.name(), spam).await
+    }
+
+    /// Removes this submission with the provided reason.
+    #[maybe_async::maybe_async]
+    pub async fn remove_with_reason(
+        &self,
+        spam: bool,
+        reason: RemoveReason<'_>,
+    ) -> Result<(), RouxError> {
+        self.remove(spam).await?;
+        self.client.add_removal_reason(self.name(), reason).await
     }
 
     /// Locks this submission.
