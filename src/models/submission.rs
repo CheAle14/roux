@@ -12,7 +12,7 @@ use crate::{
         Distinguished, FlairId, ThingFullname,
     },
     builders::form::FormBuilder,
-    client::{RedditClient, RemoveReason},
+    client::{RedditClient, RemoveReason, SelectFlairData},
     RouxError,
 };
 
@@ -356,12 +356,12 @@ impl Submission<crate::client::AuthedClient> {
 
     /// Selects a flair for this submission.
     #[maybe_async::maybe_async]
-    pub async fn select_flair(&self, flair_template_id: &str) -> Result<(), RouxError> {
+    pub async fn select_flair(&self, flair_data: &SelectFlairData) -> Result<(), RouxError> {
         self.client
             .select_flair(
                 self.subreddit(),
                 crate::client::SelectFlairTarget::Link(self.name().clone()),
-                flair_template_id,
+                flair_data,
             )
             .await
     }

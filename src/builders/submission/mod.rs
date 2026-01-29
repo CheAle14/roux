@@ -154,6 +154,12 @@ impl SubmissionSubmitBuilder {
         self.flair_id = Some(flair_id.into());
         self
     }
+
+    /// Specifies the flair text used for the submission.
+    pub fn with_flair_text(mut self, flair_text: impl Into<String>) -> Self {
+        self.flair_text = Some(flair_text.into());
+        self
+    }
 }
 
 #[cfg(test)]

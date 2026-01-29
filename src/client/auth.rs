@@ -356,11 +356,11 @@ impl AuthedClient {
         &self,
         subreddit_name: &str,
         target: SelectFlairTarget,
-        flair_template_id: &str,
+        flair: &SelectFlairData,
     ) -> Result<(), RouxError> {
         let mut form = FormBuilder::new()
-            .with("flair_template_id", flair_template_id)
-            .with("text", "");
+            .with_opt("flair_template_id", flair.template.as_ref())
+            .with_opt("text", flair.text.as_ref());
 
         match &target {
             SelectFlairTarget::Link(thing_id) => form.add("link", thing_id.full()),
@@ -581,6 +581,19 @@ pub enum SelectFlairTarget {
     Link(ThingFullname),
     /// A user, by their username
     User(String),
+}
+
+/// Builder to provide flair data to a submission or user.
+pub struct SelectFlairData {
+    template: Option<String>,
+    text: Option<String>,
+}
+
+impl SelectFlairData {
+    /// Creates flair info.
+    pub fn new(template: Option<String>, text: Option<String>) -> Self {
+        Self { template, text }
+    }
 }
 
 /// Reason for a comment or submission being removed.

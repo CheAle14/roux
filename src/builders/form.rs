@@ -18,6 +18,16 @@ impl<'a> FormBuilder<'a> {
         self
     }
 
+    pub fn with_opt<V>(mut self, key: impl Into<Cow<'a, str>>, value: Option<V>) -> Self
+    where
+        V: Into<Cow<'a, str>>,
+    {
+        if let Some(v) = value {
+            self.add(key, v.into());
+        }
+        self
+    }
+
     pub fn with_bool(self, key: impl Into<Cow<'a, str>>, value: bool) -> Self {
         self.with(key, if value { "true" } else { "false" })
     }
