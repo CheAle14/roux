@@ -1,4 +1,4 @@
-use std::future::Future;
+use std::{borrow::Cow, future::Future};
 
 use crate::{
     builders::form::FormBuilder,
@@ -12,6 +12,7 @@ use serde::Serialize;
 /// An unauthenticated client that uses a generic user agent to interact with Reddit's API.
 #[derive(Clone)]
 pub struct UnauthedClient {
+    base_addr: Cow<'static, str>,
     inner: Client,
 }
 
@@ -26,7 +27,16 @@ impl UnauthedClient {
 
         let inner = ClientBuilder::new().default_headers(headers).build()?;
 
-        Ok(Self { inner })
+        Ok(Self {
+            inner,
+            base_addr: Cow::Borrowed("https://www.reddit.com"),
+        })
+    }
+
+    /// Sets the base URL used by this client, instead of reddit.com
+    pub fn with_base_url(mut self, url: impl Into<Cow<'static, str>>) -> Self {
+        self.base_addr = url.into();
+        self
     }
 }
 
@@ -37,7 +47,8 @@ impl RedditClient for UnauthedClient {
         endpoint: impl Into<super::endpoint::EndpointBuilder>,
     ) -> Result<super::req::Response, RouxError> {
         let endpoint: EndpointBuilder = endpoint.into();
-        let endpoint = endpoint.build("https://www.reddit.com");
+        let endpoint = endpoint.build(&self.base_addr);
+
         println!("GET {endpoint}");
         let response = self.inner.get(endpoint).send().await?;
         if response.error_for_status_ref().is_err() {
@@ -56,19 +67,21 @@ impl RedditClient for UnauthedClient {
         form: &T,
     ) -> Result<super::req::Response, RouxError> {
         let endpoint: EndpointBuilder = endpoint.into();
-        let endpoint = endpoint.build("https://www.reddit.com");
+        let endpoint = endpoint.build(&self.base_addr);
+
         let resp = self.inner.post(endpoint).form(form).send().await?;
         Ok(resp)
     }
 
     maybe_async_handler!(fn execute_with_retries(&self, builder, handler) RouxError {
         let req = builder().build()?;
+        println!("{}: {}", req.method(), req.url());
         let response = self.inner.execute(req).await?;
         Ok(handler(response).await?)
     });
 
     fn make_req(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
-        let endpoint = endpoint.build("https://www.reddit.com");
+        let endpoint = endpoint.build(&self.base_addr);
         self.inner.request(method, &endpoint)
     }
 }

@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 /// Configuration information for the OAuth or Authed clients.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -6,6 +8,7 @@ pub struct Config {
     pub(crate) client_secret: String,
     pub(crate) username: Option<String>,
     pub(crate) password: Option<String>,
+    pub(crate) base_url: Cow<'static, str>,
 }
 
 impl Config {
@@ -17,6 +20,7 @@ impl Config {
             client_secret: client_secret.to_owned(),
             username: None,
             password: None,
+            base_url: Cow::Borrowed("https://oauth.reddit.com"),
         }
     }
 
@@ -33,6 +37,14 @@ impl Config {
     /// Once both password and username are set, use [`crate::client::OAuthClient::login`] to login.
     pub fn username(mut self, username: impl Into<String>) -> Self {
         self.username = Some(username.into());
+        self
+    }
+
+    /// Configures the base URL the client sends requests to.
+    ///
+    /// Defaults to https://oauth.reddit.com
+    pub fn base_url(mut self, url: impl Into<String>) -> Self {
+        self.base_url = Cow::Owned(url.into());
         self
     }
 }

@@ -261,10 +261,14 @@ pub trait RedditClient {
     }
 }
 
-#[cfg(feature = "log-json-on-error")]
+#[cfg(any(test, feature = "log-json-on-error"))]
 #[maybe_async::maybe_async]
 async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> reqwest::Result<T> {
+    eprintln!("RESPONSE: {}", response.status());
+
     let text = response.text().await?;
+
+    eprintln!("{text}");
 
     match serde_json::from_str(&text) {
         Ok(v) => Ok(v),
@@ -275,7 +279,7 @@ async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> reqw
     }
 }
 
-#[cfg(not(feature = "log-json-on-error"))]
+#[cfg(not(any(test, feature = "log-json-on-error")))]
 #[maybe_async::maybe_async]
 async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> reqwest::Result<T> {
     response.json().await

@@ -21,6 +21,7 @@ reqwest = { version = "0.12.15", default-features = false, features = ["json"] }
 html-escape = "0.2.13"
 
 [dev-dependencies]
+mock-api = { path = "D:/_GitHub/mock-reddit-api/crates/mock-api" }
 dotenv = "0.15"
 tokio = { version = "1.8.4", features = ["rt-multi-thread", "macros"] }
 tokio-test = "0.4"

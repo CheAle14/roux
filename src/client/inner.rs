@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::error::Error;
 use std::future::Future;
 use std::time::Duration;
@@ -81,19 +82,12 @@ impl From<ExecuteError> for RouxError {
 
 pub(crate) struct ClientInner {
     pub(crate) config: Config,
-    base_url: &'static str,
     inner: Client,
     ratelimit: Mutex<Ratelimit>,
 }
 
 impl ClientInner {
     pub(crate) fn new(config: Config) -> Result<Self, RouxError> {
-        let base_url = if config.password.is_some() {
-            "https://oauth.reddit.com"
-        } else {
-            "https://www.reddit.com"
-        };
-
         let mut headers = header::HeaderMap::new();
         headers.insert(
             header::USER_AGENT,
@@ -111,7 +105,6 @@ impl ClientInner {
         let client = ClientBuilder::new().default_headers(headers).build()?;
 
         Ok(Self {
-            base_url,
             config,
             inner: client,
             ratelimit: Mutex::new(Ratelimit::new()),
@@ -119,7 +112,7 @@ impl ClientInner {
     }
 
     pub(crate) fn request(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
-        let url = endpoint.build(&self.base_url);
+        let url = endpoint.build(&self.config.base_url);
         println!("[roux] {method:?} {url}");
         self.inner.request(method, url)
     }
