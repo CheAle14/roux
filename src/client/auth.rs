@@ -157,7 +157,10 @@ impl AuthedClient {
             .with("text", body)
             .with("to", username);
 
-        self.post("api/compose", &form).await
+        let mut endpoint = EndpointBuilder::new("api/compose");
+        endpoint.with_dot_json = false;
+
+        self.post(endpoint, &form).await
     }
 
     /// Get user's received messages (includes both read and unread).
