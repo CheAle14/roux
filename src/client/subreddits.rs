@@ -110,6 +110,7 @@ impl<T: RedditClient> Subreddits<T> {
 }
 
 /// Subreddit
+#[derive(Clone)]
 pub struct Subreddit<T> {
     /// Name of subreddit.
     pub name: String,
@@ -253,6 +254,13 @@ impl<T: RedditClient + Clone> Subreddit<T> {
 }
 
 impl Subreddit<AuthedClient> {
+    /// Accesses the modmail helper for this subreddit
+    pub fn modmail(&self) -> SubModmail<AuthedClient> {
+        SubModmail {
+            subreddit: self.clone(),
+        }
+    }
+
     /// Get moderators (requires authentication)
     #[maybe_async::maybe_async]
     pub async fn moderators(&self) -> Result<Moderators, RouxError> {
@@ -344,6 +352,53 @@ pub enum FlairSelector {
     NewLink,
     /// List user flairs for a particular user.
     User(String),
+}
+
+/// A helper struct to manage modmails related to a subreddit
+pub struct SubModmail<T> {
+    subreddit: Subreddit<T>,
+}
+
+impl SubModmail<AuthedClient> {
+    /// Creates a new modmail conversation from this subreddit to the recipient.
+    #[maybe_async::maybe_async]
+    pub async fn create(
+        &self,
+        subject: &str,
+        body: &str,
+        to: ModmailTo,
+        is_author_hidden: bool,
+    ) -> Result<(), RouxError> {
+        let to = match &to {
+            ModmailTo::User(u) => u.as_str(),
+            ModmailTo::Subreddit(u) => u.as_str(),
+            ModmailTo::Internal => "null",
+        };
+
+        let form = FormBuilder::new()
+            .with("body", body)
+            .with_bool("isAuthorHidden", is_author_hidden)
+            .with("srName", &self.subreddit.name)
+            .with("subject", subject)
+            .with("to", to);
+
+        self.subreddit
+            .client
+            .post("/api/mod/conversations", &form)
+            .await?;
+
+        Ok(())
+    }
+}
+
+/// Who or what the modmail should be sent to
+pub enum ModmailTo {
+    /// A user, either `username` or `u/username`
+    User(String),
+    /// A subreddit, either `subreddit` or `r/subreddit`
+    Subreddit(String),
+    /// An internal moderator discussion
+    Internal,
 }
 
 #[cfg(test)]
