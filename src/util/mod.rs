@@ -1,17 +1,21 @@
-pub(crate) mod defaults;
 /// Error responses.
 pub mod error;
-/// Url building.
-pub(crate) mod url;
-pub use error::RouxError;
-/// Options
 pub mod option;
-pub use option::FeedOption;
-pub use option::TimePeriod;
 
+pub(crate) mod defaults;
 pub(crate) mod ser_enumstr;
 pub(crate) mod ser_map;
 pub(crate) mod serde;
+/// Url building.
+pub(crate) mod url;
+
+mod submission_stream;
+
+pub use error::RouxError;
+/// Options
+pub use option::FeedOption;
+pub use option::TimePeriod;
+pub use submission_stream::*;
 
 macro_rules! maybe_async_handler {
     ($vis:vis fn $fn_name:ident (&$self:ident, $builder:ident, $handler:ident) $err:ty $body:block) => {

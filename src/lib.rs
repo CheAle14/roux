@@ -1,3 +1,4 @@
+#![feature(iter_map_windows)]
 #![allow(async_fn_in_trait)]
 #![deny(missing_docs)]
 
