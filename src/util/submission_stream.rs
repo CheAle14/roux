@@ -35,8 +35,11 @@ impl<T> SubmissionStream<T> {
     }
 }
 
+/// How the subreddit's submissions should be fetched
 pub enum FetchMethod {
+    /// Fetch each subreddit sequentially, one at a time
     Naive,
+    /// Attempt to combine subreddits into multi-reddits (e.g. /r/one+two+three)
     Multi,
 }
 
@@ -250,7 +253,11 @@ where
     }
 }
 
+/// Some client that can be used to fetch a subreddit's submissions
 pub trait SubmissionsClient<T> {
+    /// Fetch the specified number of submissions in the subreddit.
+    ///
+    /// Note that `subreddits` may contain one or more subreddits, separated by `+`.
     async fn fetch_submissions_for(
         &mut self,
         subreddits: &str,
@@ -324,9 +331,13 @@ impl<T, const MAX: usize> Queue<T, MAX> {
     }
 }
 
+/// Describes information a submission is expected to have.
 pub trait SubmissionInfo {
+    /// The unique identifier of the submission.
     fn id(&self) -> &str;
+    /// The name of the subreddit the post was made in
     fn subreddit(&self) -> &str;
+    /// The UTC timestamp of when the post was created
     fn created_utc(&self) -> f64;
 }
 
