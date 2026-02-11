@@ -192,7 +192,7 @@ impl<T> Submission<T> {
     }
     // TODO: skipped from_id
     /// The permanent, long link for this submission.
-    pub fn permalink(&self) -> &String {
+    pub fn permalink(&self) -> &str {
         &self.data.permalink
     }
     /// This is `true` if the submission has been locked by a moderator, and no replies can be
@@ -230,7 +230,7 @@ impl<T> Submission<T> {
         self.data.quarantine
     }
     /// The title of the post.
-    pub fn title(&self) -> &String {
+    pub fn title(&self) -> &str {
         &self.data.title
     }
     /// A timestamp of the time when the post was created, in **UTC**.

@@ -112,23 +112,42 @@ impl<T: RedditClient> Subreddits<T> {
 /// Subreddit
 #[derive(Clone)]
 pub struct Subreddit<T> {
-    /// Name of subreddit.
-    pub name: String,
+    /// Name of subreddit, prefixed with /r/.
+    name_prefixed: String,
     /// The reddit client used.
     pub client: T,
+}
+
+impl<T> Subreddit<T> {
+    /// The name of the subreddit, without prefix like `subreddit`.
+    pub fn name(&self) -> &str {
+        &self.name_prefixed["/r/".len()..]
+    }
+
+    /// The name of the subreddit, prefixed like `/r/subreddit`.
+    pub fn name_prefixed(&self) -> &str {
+        &self.name_prefixed
+    }
 }
 
 impl<T: RedditClient + Clone> Subreddit<T> {
     /// Create a new `Subreddit` instance.
     pub fn new(name: impl Into<String>, client: T) -> Subreddit<T> {
+        let name: String = name.into();
+
+        let name = match name.starts_with("/r/") {
+            true => name,
+            false => format!("/r/{name}"),
+        };
+
         Subreddit {
-            name: name.into(),
+            name_prefixed: name,
             client,
         }
     }
 
     pub(crate) fn endpoint(&self, endpoint: impl Into<EndpointBuilder>) -> EndpointBuilder {
-        build_subreddit(&self.name).join(endpoint)
+        EndpointBuilder::new(format!("{}/", self.name_prefixed)).join(endpoint)
     }
 
     /// Get subreddit data.
@@ -213,7 +232,7 @@ impl<T: RedditClient + Clone> Subreddit<T> {
         limit: Option<u32>,
     ) -> Result<ArticleComments<T>, RouxError> {
         self.client
-            .article_comments(&self.name, article, depth, limit)
+            .article_comments(self.name(), article, depth, limit)
             .await
     }
 
@@ -274,7 +293,7 @@ impl Subreddit<AuthedClient> {
         &self,
         submission: &SubmissionSubmitBuilder,
     ) -> Result<Submission<AuthedClient>, RouxError> {
-        self.client.submit(&self.name, submission).await
+        self.client.submit(self.name(), submission).await
     }
 
     /// List possible flair options in this subreddit
@@ -306,7 +325,8 @@ impl Subreddit<AuthedClient> {
     /// Returns a list of removal reasons for this subreddit.
     #[maybe_async::maybe_async]
     pub async fn list_removal_reasons(&self) -> Result<SubredditRemovalReasons, RouxError> {
-        let url = EndpointBuilder::new(format!("api/v1/{name}/removal_reasons", name = self.name));
+        let url =
+            EndpointBuilder::new(format!("api/v1/{name}/removal_reasons", name = self.name()));
         self.client.get_json(url).await
     }
 
@@ -341,6 +361,19 @@ impl Subreddit<AuthedClient> {
         let result: ModLogListing = self.client.get_json(endpoint).await?;
 
         Ok(result.data.children.into_iter().map(|d| d.data).collect())
+    }
+
+    /// Sends a message **to** this subreddit's moderators.
+    ///
+    /// Note: To send a message **from** this subreddit, you should use [`Subreddit::modmail`](crate::client::subreddits::Subreddit::modmail)
+    pub async fn compose_message(
+        &self,
+        subject: &str,
+        body: &str,
+    ) -> Result<reqwest::Response, RouxError> {
+        self.client
+            .compose_message(&self.name_prefixed, subject, body)
+            .await
     }
 }
 
@@ -378,7 +411,7 @@ impl SubModmail<AuthedClient> {
         let form = FormBuilder::new()
             .with("body", body)
             .with_bool("isAuthorHidden", is_author_hidden)
-            .with("srName", &self.subreddit.name)
+            .with("srName", self.subreddit.name())
             .with("subject", subject)
             .with("to", to);
 
