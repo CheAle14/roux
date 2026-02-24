@@ -206,6 +206,7 @@ impl<T: RedditClient + Clone> Subreddit<T> {
         &self,
         depth: Option<u32>,
         limit: Option<u32>,
+        after: Option<&ThingFullname>,
     ) -> Result<LatestComments<T>, RouxError> {
         let mut endpoint = self.endpoint("comments");
 
@@ -215,6 +216,10 @@ impl<T: RedditClient + Clone> Subreddit<T> {
 
         if let Some(limit) = limit {
             endpoint.with_query("limit", limit.to_string());
+        }
+
+        if let Some(after) = after {
+            endpoint.with_query("after", after.full());
         }
 
         let api: APIListing<LatestCommentData> = self.client.get_json(endpoint).await?;
@@ -456,7 +461,7 @@ mod tests {
         let top = subreddit.top(Some(FeedOption::new().limit(25))).await;
         assert!(top.is_ok());
 
-        let latest_comments = subreddit.latest_comments(None, Some(25)).await;
+        let latest_comments = subreddit.latest_comments(None, Some(25), None).await;
         assert!(latest_comments.is_ok());
 
         let article_id = &hot.unwrap().children.first().unwrap().name().clone();
