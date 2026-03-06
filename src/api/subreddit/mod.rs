@@ -1,7 +1,7 @@
 //! # Subreddit Responses
 use serde::Deserialize;
 
-use crate::api::{response::BasicListing, FlairId};
+use crate::api::{response::BasicListing, FlairId, ThingFullname};
 
 mod flairs;
 mod modlog;
@@ -37,9 +37,9 @@ pub enum AccountsActive {
 #[derive(Debug, Deserialize)]
 pub struct RichtextFlair {
     /// contains the string text
-    e: String,
+    e: Option<String>,
     /// contains the literal string that comprises the user's flair.
-    t: String,
+    t: Option<String>,
 }
 
 /// SubredditData
@@ -81,7 +81,7 @@ pub struct SubredditData {
     /// - otherwise this will be null.
     pub user_can_flair_in_sr: Option<bool>,
     /// The base name of the subreddit with no decorators or adornments, e.g. funny.
-    pub display_name: Option<String>,
+    pub display_name: String,
     /// The name of the subreddit prefixed with its relative URI path, e.g. r/funny, or u/joe for user profile subreddits.
     pub display_name_prefixed: Option<String>,
     /// The URL to this subreddit's custom header image, if any.
@@ -97,7 +97,7 @@ pub struct SubredditData {
     /// If no icon image is configured, this will be null.
     pub icon_size: Option<Vec<u64>>,
     /// The base36 internal Reddit identifier for this subreddit, e.g. 2qpqw.
-    pub id: Option<String>,
+    pub id: String,
     /// The HTML hex color code for this subreddit's primary color, if any. This corresponds to the "Base" theme color in the redesign web interface.
     /// If a color is not configured, an empty string is returned.
     pub primary_color: Option<String>,
@@ -128,7 +128,7 @@ pub struct SubredditData {
     pub videostream_links_count: Option<u8>,
     /// The fullname identifier of this subreddit. This is a combination of the thing kind (t5) and the id,
     /// separated by an underscore, e.g. t5_2qh38
-    pub name: Option<String>,
+    pub name: ThingFullname,
     /// Whether or not this subreddit is quarantined.
     /// This is a restricted property. To access a quarantined subreddit through this endpoint,
     /// the API user must have affirmatively clicked "continue" on its quarantine interstitial page at some point,

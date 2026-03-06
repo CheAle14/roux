@@ -12,9 +12,11 @@ use crate::api::me::MeData;
 use crate::api::response::{
     BasicListing, BasicThing, LazyThingCreatedData, MultipleBasicThingsData,
 };
+use crate::api::subreddit::SubredditsData;
 use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingFullname};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
+use crate::client::Subreddit;
 use crate::client::{inner::ClientInner, req::*};
 use crate::models::inbox::Inbox;
 use crate::models::live::LiveThread;
@@ -142,6 +144,22 @@ impl AuthedClient {
             .post_with_response_raw(format!("r/{}/api/unfriend", sub).as_str(), &form)
             .await?;
         Ok(resp.success)
+    }
+
+    /// Fetches subreddits the current account has the relationship with
+    #[maybe_async::maybe_async]
+    pub async fn get_my_subreddits(
+        &self,
+        relation: SubRelation,
+    ) -> Result<SubredditsData, RouxError> {
+        let endpoint = match relation {
+            SubRelation::Subscriber => "subreddits/mine/subscriber",
+            SubRelation::Contributor => "subreddits/mine/contributor",
+            SubRelation::Moderator => "subreddits/mine/moderator",
+            SubRelation::Streams => "subreddits/mine/streams",
+        };
+
+        self.get_json(endpoint).await
     }
 
     /// Compose message
@@ -576,6 +594,18 @@ impl RedditClient for AuthedClient {
     fn make_req(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder {
         self.0.request(method, endpoint)
     }
+}
+
+/// The kind of relation with the subreddit
+pub enum SubRelation {
+    /// We are subscribed
+    Subscriber,
+    /// We are a contributor
+    Contributor,
+    /// We are a moderator
+    Moderator,
+    /// ???
+    Streams,
 }
 
 /// The target to apply the flair to
