@@ -12,6 +12,7 @@ pub struct CommonCommentData {
     pub all_awardings: Vec<Value>,
     pub approved: Option<bool>,
     pub approved_at_utc: Option<f64>,
+    #[serde(with = "what_a_terrible_api")]
     pub approved_by: Option<String>,
     pub archived: bool,
     pub associated_award: Option<Value>,
@@ -29,6 +30,7 @@ pub struct CommonCommentData {
     pub author_premium: Option<bool>,
     pub awarders: Vec<Value>,
     pub banned_at_utc: Option<f64>,
+    #[serde(with = "what_a_terrible_api")]
     pub banned_by: Option<String>,
     #[serde(deserialize_with = "crate::util::serde::unescape_html")]
     pub body: String,
@@ -139,6 +141,69 @@ impl Serialize for Edited {
             Edited::EditedAt(f) => serializer.serialize_f64(*f),
             Edited::NotEdited => serializer.serialize_bool(false),
         }
+    }
+}
+
+mod what_a_terrible_api {
+    //! For some unknown reason Reddit has decided that `banned_by: true` is a perfectly normal username.
+    //! Just going to assume that means it was removed by Reddit (e.g. spam filter).
+
+    use serde::{de::Visitor, Deserializer, Serializer};
+
+    pub fn serialize<S>(value: &Option<String>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match value {
+            Some(v) if v == "reddit" => serializer.serialize_bool(true),
+            Some(v) => serializer.serialize_str(&v),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<String>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct Visit;
+
+        impl<'de> Visitor<'de> for Visit {
+            type Value = Option<String>;
+
+            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+                formatter.write_str("name of moderator or boolean true, or null")
+            }
+
+            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                self.visit_string(v.to_owned())
+            }
+
+            fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Some(v))
+            }
+
+            fn visit_bool<E>(self, _v: bool) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Some(String::from("reddit")))
+            }
+
+            fn visit_none<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(None)
+            }
+        }
+
+        deserializer.deserialize_any(Visit)
     }
 }
 
