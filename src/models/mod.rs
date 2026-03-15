@@ -20,6 +20,7 @@ mod distinguish;
 pub use distinguish::Distinguish;
 
 pub mod live;
+pub mod modqueue;
 
 pub(crate) trait FromClientAndData<Client, Data> {
     fn new(client: Client, data: Data) -> Self;

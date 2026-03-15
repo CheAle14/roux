@@ -29,7 +29,7 @@ pub struct CommonCommentData {
     pub author_premium: Option<bool>,
     pub awarders: Vec<Value>,
     pub banned_at_utc: Option<f64>,
-    pub banned_by: Option<Value>,
+    pub banned_by: Option<String>,
     #[serde(deserialize_with = "crate::util::serde::unescape_html")]
     pub body: String,
     pub body_html: String,

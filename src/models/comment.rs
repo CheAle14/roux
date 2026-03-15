@@ -45,8 +45,8 @@ macro_rules! impl_comment {
             }
 
             /// The username of the moderator who approved the comment.
-            pub fn approved_by(&self) -> &Option<String> {
-                &self.data.common.approved_by
+            pub fn approved_by(&self) -> Option<&str> {
+                self.data.common.approved_by.as_ref().map(|s| s.as_str())
             }
 
             /// Whether the post this comment is under has been archived.
@@ -138,8 +138,8 @@ macro_rules! impl_comment {
             }
 
             /// ??
-            pub fn banned_by(&self) -> &Option<Value> {
-                &self.data.common.banned_by
+            pub fn banned_by(&self) -> Option<&str> {
+                self.data.common.banned_by.as_ref().map(|s| s.as_str())
             }
 
             /// The text content of this comment

@@ -93,7 +93,7 @@ impl<T> Submission<T> {
     }
     // skipped report_reasons
     /// The name of the author of the submission (not including the leading `/u/`)
-    pub fn author(&self) -> &String {
+    pub fn author(&self) -> &str {
         &self.data.author
     }
     // skipped media

@@ -74,6 +74,7 @@ use crate::api::subreddit::{
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
 use crate::models::comment::{ArticleComments, LatestComments};
+use crate::models::modqueue::Modqueue;
 use crate::models::submission::Submissions;
 use crate::models::{FromClientAndData, Listing, Submission, SubmissionStickySlot};
 use crate::util::error::RouxErrorKind;
@@ -198,6 +199,20 @@ impl<T: RedditClient + Clone> Subreddit<T> {
     #[maybe_async::maybe_async]
     pub async fn latest(&self, options: Option<FeedOption>) -> Result<Submissions<T>, RouxError> {
         self.get_feed("new", options).await
+    }
+
+    /// Gets things requiring moderator review.
+    #[maybe_async::maybe_async]
+    pub async fn modqueue(&self, options: Option<FeedOption>) -> Result<Modqueue<T>, RouxError> {
+        let mut endpoint = self.endpoint("about/modqueue");
+
+        if let Some(options) = options {
+            options.build_url(&mut endpoint);
+        }
+
+        let response: crate::api::subreddit::ModQueueItems = self.client.get_json(endpoint).await?;
+
+        Ok(Listing::new_outer(response, self.client.clone()))
     }
 
     /// Get latest comments.

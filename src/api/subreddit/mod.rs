@@ -5,10 +5,12 @@ use crate::api::{response::BasicListing, FlairId, ThingFullname};
 
 mod flairs;
 mod modlog;
+mod modqueue;
 mod removal_reasons;
 
 pub use flairs::*;
 pub use modlog::*;
+pub use modqueue::*;
 pub use removal_reasons::*;
 
 /// SubredditResponse
