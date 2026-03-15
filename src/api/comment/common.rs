@@ -12,7 +12,7 @@ pub struct CommonCommentData {
     pub all_awardings: Vec<Value>,
     pub approved: Option<bool>,
     pub approved_at_utc: Option<f64>,
-    #[serde(with = "what_a_terrible_api")]
+    #[serde(default, with = "what_a_terrible_api")]
     pub approved_by: Option<String>,
     pub archived: bool,
     pub associated_award: Option<Value>,
@@ -30,7 +30,7 @@ pub struct CommonCommentData {
     pub author_premium: Option<bool>,
     pub awarders: Vec<Value>,
     pub banned_at_utc: Option<f64>,
-    #[serde(with = "what_a_terrible_api")]
+    #[serde(default, with = "what_a_terrible_api")]
     pub banned_by: Option<String>,
     #[serde(deserialize_with = "crate::util::serde::unescape_html")]
     pub body: String,
@@ -201,6 +201,13 @@ mod what_a_terrible_api {
             {
                 Ok(None)
             }
+
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(None)
+            }
         }
 
         deserializer.deserialize_any(Visit)
@@ -209,6 +216,8 @@ mod what_a_terrible_api {
 
 #[cfg(test)]
 mod tests {
+    use serde::Deserialize;
+
     use crate::api::comment::common::Edited;
 
     #[test]
@@ -222,5 +231,37 @@ mod tests {
             Edited::EditedAt(123.0)
         );
         assert!(serde_json::from_str::<Edited>("true").is_err());
+    }
+
+    #[test]
+    fn serde_banned_by() {
+        #[derive(Deserialize)]
+        struct Data {
+            #[serde(default, with = "super::what_a_terrible_api")]
+            banned_by: Option<String>,
+        }
+
+        assert_eq!(
+            serde_json::from_str::<Data>(r#"{}"#).unwrap().banned_by,
+            None
+        );
+        assert_eq!(
+            serde_json::from_str::<Data>(r#"{"banned_by": null}"#)
+                .unwrap()
+                .banned_by,
+            None
+        );
+        assert_eq!(
+            serde_json::from_str::<Data>(r#"{"banned_by": true}"#)
+                .unwrap()
+                .banned_by,
+            Some(String::from("reddit"))
+        );
+        assert_eq!(
+            serde_json::from_str::<Data>(r#"{"banned_by": "helloworld"}"#)
+                .unwrap()
+                .banned_by,
+            Some(String::from("helloworld"))
+        );
     }
 }
