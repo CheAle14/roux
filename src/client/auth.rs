@@ -1,4 +1,3 @@
-use std::future::Future;
 use std::sync::{Arc, RwLock};
 
 use reqwest::header::HeaderValue;
@@ -9,18 +8,14 @@ use serde::Serialize;
 use crate::api::comment::APICreatedComments;
 use crate::api::live::LiveThreadData;
 use crate::api::me::MeData;
-use crate::api::response::{
-    BasicListing, BasicThing, LazyThingCreatedData, MultipleBasicThingsData,
-};
+use crate::api::response::{BasicThing, LazyThingCreatedData, MultipleBasicThingsData};
 use crate::api::subreddit::SubredditsData;
-use crate::api::{APIInbox, APISaved, APISubmissions, Friend, ThingFullname};
+use crate::api::{APIInbox, APISaved, Friend, ThingFullname};
 use crate::builders::form::FormBuilder;
 use crate::builders::submission::SubmissionSubmitBuilder;
-use crate::client::Subreddit;
 use crate::client::{inner::ClientInner, req::*};
 use crate::models::inbox::Inbox;
 use crate::models::live::LiveThread;
-use crate::models::submission::Submissions;
 use crate::models::{
     CreatedComment, CreatedCommentWithLinkInfo, Distinguish, FromClientAndData, Listing, Message,
     Saved,
@@ -87,16 +82,16 @@ impl AuthedClient {
     ///
     /// Note that `subreddit_name` is the display name of the subreddit without the `/r/` prefix, NOT the "full name" (e.g. `t5_abcde`)
     #[maybe_async::maybe_async]
-    pub async fn submit(
+    pub async fn submit<Kind: Serialize>(
         &self,
         subreddit_name: &str,
-        submission: &SubmissionSubmitBuilder,
+        submission: &SubmissionSubmitBuilder<Kind>,
     ) -> Result<crate::models::Submission<Self>, RouxError> {
         #[derive(Serialize)]
-        struct SubmitRequest<'a> {
+        struct SubmitRequest<'a, Kind> {
             sr: &'a str,
             #[serde(flatten)]
-            data: &'a SubmissionSubmitBuilder,
+            data: &'a SubmissionSubmitBuilder<Kind>,
             api_type: &'static str,
         }
 

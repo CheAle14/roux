@@ -64,6 +64,7 @@
 //! # }
 //! ```
 use reqwest::StatusCode;
+use serde::Serialize;
 
 use crate::api::comment::latest::LatestCommentData;
 use crate::api::subreddit::{
@@ -79,7 +80,6 @@ use crate::models::submission::Submissions;
 use crate::models::{FromClientAndData, Listing, Submission, SubmissionStickySlot};
 use crate::util::error::RouxErrorKind;
 use crate::util::ser_enumstr::get_enum_name;
-use crate::util::url::build_subreddit;
 use crate::util::{FeedOption, RouxError};
 
 use crate::api::response::BasicListing as APIListing;
@@ -309,9 +309,9 @@ impl Subreddit<AuthedClient> {
 
     /// Submits a post to this subreddit
     #[maybe_async::maybe_async]
-    pub async fn submit(
+    pub async fn submit<Kind: Serialize>(
         &self,
-        submission: &SubmissionSubmitBuilder,
+        submission: &SubmissionSubmitBuilder<Kind>,
     ) -> Result<Submission<AuthedClient>, RouxError> {
         self.client.submit(self.name(), submission).await
     }

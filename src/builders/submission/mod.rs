@@ -1,65 +1,33 @@
 use serde::{ser::SerializeStruct, Serialize};
 
-/// The type of submission, one of self text, rich text or link.
-#[derive(Debug, Clone)]
-pub enum SubmissionSubmitKind {
-    /// A text post
-    SelfText {
-        /// Markdown formatted text for the post
-        text: String,
-    },
-    /// A rich text post
-    RichText {
-        /// JSON formatted text for the post
-        rich_text: String,
-    },
-    /// A link post
-    Link {
-        /// The URL for this link post
-        url: String,
-        /// Whether previous posts for this link should be ignored
-        resubmit: bool,
-    },
+/// Payload for a text-only post
+#[derive(Debug, Clone, Serialize)]
+pub struct PayloadSelfText {
+    kind: &'static str,
+    text: String,
 }
 
-impl Serialize for SubmissionSubmitKind {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            SubmissionSubmitKind::SelfText { text } => {
-                let mut start = serializer.serialize_struct("", 2)?;
-                start.serialize_field("kind", "self")?;
-                start.serialize_field("text", text)?;
-                start.end()
-            }
-            SubmissionSubmitKind::RichText { rich_text } => {
-                let mut start = serializer.serialize_struct("", 2)?;
-                start.serialize_field("kind", "self")?;
-                start.serialize_field("richtext_json", rich_text)?;
-                start.end()
-            }
-            SubmissionSubmitKind::Link { url, resubmit } => {
-                let mut start = if *resubmit {
-                    let mut start = serializer.serialize_struct("", 3)?;
-                    start.serialize_field("resubmit", &true)?;
-                    start
-                } else {
-                    serializer.serialize_struct("", 2)?
-                };
+/// Payload for a rich text post
+#[derive(Debug, Clone, Serialize)]
+pub struct PayloadRichText {
+    kind: &'static str,
+    rich_text: String,
+}
 
-                start.serialize_field("kind", "link")?;
-                start.serialize_field("url", url)?;
-                start.end()
-            }
-        }
-    }
+/// Payload for a link post
+#[derive(Debug, Clone, Serialize)]
+pub struct PayloadLink {
+    kind: &'static str,
+    url: String,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    resubmit: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text: Option<String>,
 }
 
 /// A builder to gather the data to submit a post
 #[derive(Debug, Clone, Serialize)]
-pub struct SubmissionSubmitBuilder {
+pub struct SubmissionSubmitBuilder<Kind> {
     title: String,
     #[serde(rename = "sendreplies")]
     send_replies: bool,
@@ -77,13 +45,13 @@ pub struct SubmissionSubmitBuilder {
     draft_id: Option<String>,
     /// The submission kind
     #[serde(flatten)]
-    pub kind: SubmissionSubmitKind,
+    pub kind: Kind,
     api_type: &'static str,
     validate_on_submit: bool,
 }
 
-impl SubmissionSubmitBuilder {
-    fn new(title: impl Into<String>, kind: SubmissionSubmitKind) -> Self {
+impl<Kind> SubmissionSubmitBuilder<Kind> {
+    fn new(title: impl Into<String>, kind: Kind) -> Self {
         Self {
             title: title.into(),
             kind,
@@ -99,35 +67,62 @@ impl SubmissionSubmitBuilder {
             validate_on_submit: false,
         }
     }
+}
 
+impl SubmissionSubmitBuilder<PayloadSelfText> {
     /// Creates a submission builder for a self text post
     pub fn text(title: impl Into<String>, body: impl Into<String>) -> Self {
-        Self::new(title, SubmissionSubmitKind::SelfText { text: body.into() })
-    }
-
-    /// Creates a submission builder for a link post.
-    ///
-    /// If `resubmit` is true, the post will be made even if there are other posts for this URL in the subreddit.
-    pub fn link(title: impl Into<String>, url: impl Into<String>, resubmit: bool) -> Self {
         Self::new(
             title,
-            SubmissionSubmitKind::Link {
-                resubmit,
-                url: url.into(),
+            PayloadSelfText {
+                kind: "self",
+                text: body.into(),
             },
         )
     }
+}
 
+impl SubmissionSubmitBuilder<PayloadRichText> {
     /// Creates a submission builder for a rich text JSON post.
     pub fn rich_text_json(title: impl Into<String>, json: impl Into<String>) -> Self {
         Self::new(
             title,
-            SubmissionSubmitKind::RichText {
+            PayloadRichText {
+                kind: "self",
                 rich_text: json.into(),
             },
         )
     }
+}
 
+impl SubmissionSubmitBuilder<PayloadLink> {
+    /// Creates a submission builder for a link post.
+    pub fn link(title: impl Into<String>, url: impl Into<String>) -> Self {
+        Self::new(
+            title,
+            PayloadLink {
+                kind: "link",
+                url: url.into(),
+                resubmit: false,
+                text: None,
+            },
+        )
+    }
+
+    /// If `resubmit` is true, the post will be made even if there are other posts for this URL in the subreddit.
+    pub fn with_resubmit(mut self, resubmit: bool) -> Self {
+        self.kind.resubmit = resubmit;
+        self
+    }
+
+    /// Adds a markdown body for this link post
+    pub fn with_text(mut self, text: impl Into<String>) -> Self {
+        self.kind.text = Some(text.into());
+        self
+    }
+}
+
+impl<Kind> SubmissionSubmitBuilder<Kind> {
     /// Whether comments to the post should be sent to your inbox as messages.
     /// Defaults to `true`
     pub fn with_send_replies(mut self, send_replies: bool) -> Self {
@@ -177,11 +172,10 @@ mod tests {
     }
     #[test]
     pub fn test_url_serialize() {
-        let builder =
-            super::SubmissionSubmitBuilder::link("Another test", "https://example.com", false)
-                .with_send_replies(false)
-                .with_spoiler(true)
-                .with_nsfw(true);
+        let builder = super::SubmissionSubmitBuilder::link("Another test", "https://example.com")
+            .with_send_replies(false)
+            .with_spoiler(true)
+            .with_nsfw(true);
 
         let value = serde_json::to_string(&builder).unwrap();
         assert_eq!(
@@ -191,15 +185,29 @@ mod tests {
     }
     #[test]
     pub fn test_url_resubmit_serialize() {
-        let builder =
-            super::SubmissionSubmitBuilder::link("Another test", "https://example.com", true)
-                .with_send_replies(false)
-                .with_nsfw(true);
+        let builder = super::SubmissionSubmitBuilder::link("Another test", "https://example.com")
+            .with_resubmit(true)
+            .with_send_replies(false)
+            .with_nsfw(true);
 
         let value = serde_json::to_string(&builder).unwrap();
         assert_eq!(
             value,
-            r#"{"title":"Another test","sendreplies":false,"nsfw":true,"spoiler":false,"resubmit":true,"kind":"link","url":"https://example.com","api_type":"json","validate_on_submit":false}"#,
+            r#"{"title":"Another test","sendreplies":false,"nsfw":true,"spoiler":false,"kind":"link","url":"https://example.com","resubmit":true,"api_type":"json","validate_on_submit":false}"#,
+        );
+    }
+    #[test]
+    pub fn test_url_text_serialize() {
+        let builder = super::SubmissionSubmitBuilder::link("Another test", "https://example.com")
+            .with_resubmit(true)
+            .with_send_replies(false)
+            .with_text("hello world")
+            .with_nsfw(true);
+
+        let value = serde_json::to_string(&builder).unwrap();
+        assert_eq!(
+            value,
+            r#"{"title":"Another test","sendreplies":false,"nsfw":true,"spoiler":false,"kind":"link","url":"https://example.com","resubmit":true,"text":"hello world","api_type":"json","validate_on_submit":false}"#,
         );
     }
 }
