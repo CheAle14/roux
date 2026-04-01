@@ -108,12 +108,18 @@ impl ClientInner {
         }
          */
 
-        let client = ClientBuilder::new().default_headers(headers).build()?;
+        let client = ClientBuilder::new().default_headers(headers);
+
+        let client = if let Some(timeout) = config.timeout {
+            client.timeout(timeout)
+        } else {
+            client
+        };
 
         Ok(Self {
             base_url,
             config,
-            inner: client,
+            inner: client.build()?,
             ratelimit: Mutex::new(Ratelimit::new()),
         })
     }

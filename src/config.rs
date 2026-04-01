@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 /// Configuration information for the OAuth or Authed clients.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -6,6 +8,7 @@ pub struct Config {
     pub(crate) client_secret: String,
     pub(crate) username: Option<String>,
     pub(crate) password: Option<String>,
+    pub(crate) timeout: Option<Duration>,
 }
 
 impl Config {
@@ -17,6 +20,7 @@ impl Config {
             client_secret: client_secret.to_owned(),
             username: None,
             password: None,
+            timeout: None,
         }
     }
 
@@ -33,6 +37,14 @@ impl Config {
     /// Once both password and username are set, use [`crate::client::OAuthClient::login`] to login.
     pub fn username(mut self, username: impl Into<String>) -> Self {
         self.username = Some(username.into());
+        self
+    }
+
+    /// Sets the timeout for all requests made by this client.
+    ///
+    /// By default, this is `None`.
+    pub fn timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
         self
     }
 }
