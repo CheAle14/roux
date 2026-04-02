@@ -34,7 +34,7 @@ pub trait RedditClient {
     ) -> Result<T, RouxError>
     where
         FReq: Fn() -> RequestBuilder,
-        FRespFut: Future<Output = reqwest::Result<T>>,
+        FRespFut: Future<Output = Result<T, ParseJsonError>>,
         FResp: Fn(Response) -> FRespFut;
 
     /// Sends a request to reddit (retrying if it fails), then calls a handler (such as reading as JSON),
@@ -44,10 +44,10 @@ pub trait RedditClient {
         &self,
         builder: &FReq,
         handler: &FResp,
-    ) -> Result<T, RouxError>
+    ) -> Result<T, ParseJsonError>
     where
         FReq: Fn() -> RequestBuilder,
-        FResp: Fn(Response) -> reqwest::Result<T>;
+        FResp: Fn(Response) -> Result<T, RouxError>;
 
     /// Builds a request to the endpoint with the particular method
     fn make_req(&self, method: Method, endpoint: &EndpointBuilder) -> RequestBuilder;
@@ -261,22 +261,51 @@ pub trait RedditClient {
     }
 }
 
-#[cfg(feature = "log-json-on-error")]
+pub(crate) enum ParseJsonError {
+    Reqwest(reqwest::Error),
+    Json(serde_json::Error),
+    #[cfg(feature = "json-error-path")]
+    Path(serde_path_to_error::Error<serde_json::Error>),
+}
+
+#[cfg(all(feature = "log-json-on-error", feature = "json-error-path"))]
 #[maybe_async::maybe_async]
-async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> reqwest::Result<T> {
-    let text = response.text().await?;
+async fn parse_response_as_json<T: DeserializeOwned>(
+    response: Response,
+) -> Result<T, ParseJsonError> {
+    let text = response.text().await.map_err(ParseJsonError::Reqwest)?;
+
+    let json = &mut serde_json::Deserializer::from_str(&text);
+
+    match serde_path_to_error::deserialize(json) {
+        Ok(v) => Ok(v),
+        Err(err) => {
+            let _ = std::fs::write("roux-json-error.json", &text);
+            Err(ParseJsonError::Path(err))
+        }
+    }
+}
+
+#[cfg(all(feature = "log-json-on-error", not(feature = "json-error-path")))]
+#[maybe_async::maybe_async]
+async fn parse_response_as_json<T: DeserializeOwned>(
+    response: Response,
+) -> Result<T, ParseJsonError> {
+    let text = response.text().await.map_err(ParseJsonError::Reqwest)?;
 
     match serde_json::from_str(&text) {
         Ok(v) => Ok(v),
         Err(e) => {
-            std::fs::write("roux-json-error.json", &text).unwrap();
-            panic!("Failed to parse JSON: {e}");
+            let _ = std::fs::write("roux-json-error.json", &text);
+            Err(ParseJsonError::Json(e))
         }
     }
 }
 
 #[cfg(not(feature = "log-json-on-error"))]
 #[maybe_async::maybe_async]
-async fn parse_response_as_json<T: DeserializeOwned>(response: Response) -> reqwest::Result<T> {
-    response.json().await
+async fn parse_response_as_json<T: DeserializeOwned>(
+    response: Response,
+) -> Result<T, ParseJsonError> {
+    response.json().await.map_err(ParseJsonError::Reqwest)
 }

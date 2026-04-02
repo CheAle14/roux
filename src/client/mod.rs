@@ -26,5 +26,6 @@ pub use auth::*;
 pub use noauth::*;
 pub use oauth::*;
 pub use subreddits::*;
+pub(crate) use traits::ParseJsonError;
 pub use traits::RedditClient;
 pub use user::*;

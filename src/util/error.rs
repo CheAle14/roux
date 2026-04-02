@@ -6,6 +6,7 @@ use serde_json;
 
 use crate::api::response::ApiError;
 use crate::client;
+use crate::client::ParseJsonError;
 
 /// Error type that occurs when an API request fails for some reason.
 pub enum RouxErrorKind {
@@ -26,6 +27,9 @@ pub enum RouxErrorKind {
     RedditError(Vec<ApiError>),
     /// Occurs if serde could not Deserialize the response.
     Parse(serde_json::Error),
+    /// The response could not be deserialized, at the provided location.
+    #[cfg(feature = "json-error-path")]
+    ParseWithPath(serde_path_to_error::Error<serde_json::Error>),
     /// Occurs if there is a grant error.
     Auth(String),
     /// Occurs if [`Reddit::create_client`] is called before [`Reddit::username`] and [`Reddit::password`].
@@ -80,6 +84,11 @@ impl RouxError {
     pub(crate) fn parse(error: serde_json::Error) -> Self {
         Self::new(RouxErrorKind::Parse(error))
     }
+
+    #[cfg(feature = "json-error-path")]
+    pub(crate) fn parse_with_path(error: serde_path_to_error::Error<serde_json::Error>) -> Self {
+        Self::new(RouxErrorKind::ParseWithPath(error))
+    }
 }
 
 impl From<RouxErrorKind> for RouxError {
@@ -97,6 +106,17 @@ impl From<reqwest::Error> for RouxError {
 impl From<serde_json::Error> for RouxError {
     fn from(e: serde_json::Error) -> Self {
         Self::parse(e)
+    }
+}
+
+impl From<ParseJsonError> for RouxError {
+    fn from(value: ParseJsonError) -> Self {
+        match value {
+            ParseJsonError::Reqwest(error) => Self::network(error),
+            ParseJsonError::Json(error) => Self::parse(error),
+            #[cfg(feature = "json-error-path")]
+            ParseJsonError::Path(error) => Self::parse_with_path(error),
+        }
     }
 }
 
@@ -119,6 +139,10 @@ impl fmt::Display for RouxError {
                 write!(f, "Ratelimited until {retry_after:?}")
             }
             RouxErrorKind::RedditError(errors) => write!(f, "API errors: {errors:?}"),
+            #[cfg(feature = "json-error-path")]
+            RouxErrorKind::ParseWithPath(err) => {
+                write!(f, "Failed to parse {}: {err}", err.path())
+            }
         }?;
 
         write!(f, "\r\nBacktrace:\r\n{:}", self.backtrace)?;
@@ -144,6 +168,8 @@ impl error::Error for RouxError {
             RouxErrorKind::FullNetwork(_, err) => Some(err),
             RouxErrorKind::Ratelimited { .. } => None,
             RouxErrorKind::RedditError { .. } => None,
+            #[cfg(feature = "json-error-path")]
+            RouxErrorKind::ParseWithPath(err) => Some(err),
         }
     }
 

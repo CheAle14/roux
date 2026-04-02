@@ -6,7 +6,7 @@ use reqwest::{header, Method, StatusCode};
 use serde::{Deserialize, Serialize};
 
 use crate::client::ratelimit::Ratelimit;
-use crate::client::req::*;
+use crate::client::{req::*, ParseJsonError};
 use crate::util::RouxError;
 use crate::Config;
 
@@ -58,6 +58,7 @@ pub(crate) enum ExecuteError {
     AuthError(String),
     ErrorOnly(reqwest::Error),
     ResponseAndError(Response, reqwest::Error),
+    JsonError(ParseJsonError),
 }
 
 impl From<reqwest::Error> for ExecuteError {
@@ -75,6 +76,7 @@ impl From<ExecuteError> for RouxError {
             ExecuteError::ResponseAndError(response, error) => {
                 RouxError::full_network(response, error)
             }
+            ExecuteError::JsonError(error) => RouxError::from(error),
         }
     }
 }
@@ -223,7 +225,12 @@ impl ClientInner {
             let result = match response {
                 Ok(t) => {
                     let handled = handler(t).await;
-                    handled.map_err(RetryableExecuteError::from)
+
+                    match handled {
+                        Ok(v) => Ok(v),
+                        Err(ParseJsonError::Reqwest(err)) => Err(RetryableExecuteError::from(err)),
+                        Err(other) => return Err(ExecuteError::JsonError(other))
+                    }
                 }
                 Err(e) => Err(e),
             };
@@ -305,7 +312,12 @@ impl ClientInner {
                 .form(&login)
         };
 
-        let handler = |response: crate::client::req::Response| response.json::<AuthResponse>();
+        let handler = |response: crate::client::req::Response| async {
+            response
+                .json::<AuthResponse>()
+                .await
+                .map_err(ParseJsonError::Reqwest)
+        };
 
         let auth_data = self.execute(&request, &handler).await?;
 

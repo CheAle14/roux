@@ -35,7 +35,7 @@ macro_rules! maybe_async_handler {
         ) -> Result<T, $err>
         where
             FReq: Fn() -> RequestBuilder,
-            FRespFut: std::future::Future<Output = reqwest::Result<T>>,
+            FRespFut: std::future::Future<Output = Result<T, crate::client::ParseJsonError>>,
             FResp: Fn(Response) -> FRespFut,
 
         $body

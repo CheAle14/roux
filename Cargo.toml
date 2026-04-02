@@ -16,6 +16,7 @@ exclude = [".github/*", ".gitignore"]
 tokio = { version = "1.8.4", default-features = false }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_path_to_error = { version = "0.1.20", optional = true }
 maybe-async = "0.2.9"
 reqwest = { version = "0.12.15", default-features = false, features = ["json"] }
 html-escape = "0.2.13"
@@ -32,3 +33,4 @@ rustls = ["reqwest/rustls-tls"]
 native-tls = ["reqwest/native-tls"]
 blocking = ["maybe-async/is_sync", "reqwest/blocking"]
 log-json-on-error = []
+json-error-path = ["dep:serde_path_to_error"]
