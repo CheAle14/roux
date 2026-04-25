@@ -15,7 +15,11 @@ version = "2.3.51"
 [dependencies]
 html-escape = "0.2.13"
 maybe-async = "0.2.9"
-reqwest = { version = "0.13.2", default-features = false, features = ["json"] }
+reqwest = { version = "0.13.2", default-features = false, features = [
+    "form",
+    "json",
+    "multipart",
+] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_path_to_error = { version = "0.1.20", optional = true }
@@ -33,4 +37,4 @@ default = ["native-tls"]
 json-error-path = ["dep:serde_path_to_error"]
 log-json-on-error = []
 native-tls = ["reqwest/native-tls"]
-rustls = ["reqwest/rustls-tls"]
+rustls = ["reqwest/rustls"]
