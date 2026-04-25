@@ -1,36 +1,36 @@
 [package]
-name = "roux"
-version = "2.3.51"
 authors = ["Justin Duch <justin@duch.me>"]
-edition = "2021"
-license = "MIT"
+categories = ["api-bindings", "authentication", "network-programming"]
 description = "Simple and (a)synchronous Reddit API wrapper"
-readme = "README.md"
 documentation = "https://docs.rs/roux"
-repository = "https://github.com/halcyonnouveau/roux"
-keywords = ["reddit", "api", "async"]
-categories = ["authentication", "api-bindings", "network-programming"]
+edition = "2021"
 exclude = [".github/*", ".gitignore"]
+keywords = ["api", "async", "reddit"]
+license = "MIT"
+name = "roux"
+readme = "README.md"
+repository = "https://github.com/halcyonnouveau/roux"
+version = "2.3.51"
 
 [dependencies]
-tokio = { version = "1.8.4", default-features = false }
+html-escape = "0.2.13"
+maybe-async = "0.2.9"
+reqwest = { version = "0.13.2", default-features = false, features = ["json"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_path_to_error = { version = "0.1.20", optional = true }
-maybe-async = "0.2.9"
-reqwest = { version = "0.12.15", default-features = false, features = ["json"] }
-html-escape = "0.2.13"
+tokio = { version = "1.8.4", default-features = false }
 
 [dev-dependencies]
 dotenv = "0.15"
-tokio = { version = "1.8.4", features = ["rt-multi-thread", "macros"] }
-tokio-test = "0.4"
 serde_urlencoded = "0.7.1"
+tokio = { version = "1.8.4", features = ["macros", "rt-multi-thread"] }
+tokio-test = "0.4"
 
 [features]
-default = ["native-tls"]
-rustls = ["reqwest/rustls-tls"]
-native-tls = ["reqwest/native-tls"]
 blocking = ["maybe-async/is_sync", "reqwest/blocking"]
-log-json-on-error = []
+default = ["native-tls"]
 json-error-path = ["dep:serde_path_to_error"]
+log-json-on-error = []
+native-tls = ["reqwest/native-tls"]
+rustls = ["reqwest/rustls-tls"]
