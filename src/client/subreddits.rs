@@ -68,7 +68,7 @@ use serde::Serialize;
 
 use crate::api::comment::latest::LatestCommentData;
 use crate::api::subreddit::{
-    FlairSelection, ModActionData, ModActionType, ModLogListing, SubredditData,
+    FlairList, FlairSelection, ModActionData, ModActionType, ModLogListing, SubredditData,
     SubredditRemovalReasons, SubredditResponse, SubredditsData,
 };
 
@@ -329,6 +329,26 @@ impl Subreddit<AuthedClient> {
         let url = self.endpoint("api/flairselector");
 
         let got = self.client.post_with_response_raw(url, &form).await?;
+        Ok(got)
+    }
+
+    /// Lists flairs assigned to users in the subreddit.
+    #[maybe_async::maybe_async]
+    pub async fn list_user_flairs(
+        &self,
+        after: Option<&str>,
+        limit: u16,
+    ) -> Result<FlairList, RouxError> {
+        let mut url = self
+            .endpoint("api/flairlist")
+            .query("limit", limit.to_string());
+
+        if let Some(after) = after {
+            url.with_query("after", after);
+        }
+
+        let got = self.client.get_json(url).await?;
+
         Ok(got)
     }
 
