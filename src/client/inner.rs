@@ -276,6 +276,7 @@ impl ClientInner {
     #[maybe_async::maybe_async]
     pub(crate) async fn attempt_login(&self) -> Result<String, ExecuteError> {
         #[derive(Serialize)]
+        #[derive(Debug, Serialize)]
         struct LoginRequest<'a> {
             grant_type: &'a str,
             username: &'a str,
@@ -303,29 +304,30 @@ impl ClientInner {
                 .ok_or(ExecuteError::AuthorizationRequired)?,
         };
 
-        let mut endpoint = EndpointBuilder::new("api/v1/access_token");
-        endpoint.with_dot_json = false;
+        let request = self
+            .inner
+            .request(Method::POST, "https://www.reddit.com/api/v1/access_token")
+            .basic_auth(&self.config.client_id, Some(&self.config.client_secret))
+            .form(&login);
 
-        let request = || {
-            self.request(Method::POST, &endpoint)
-                .basic_auth(&self.config.client_id, Some(&self.config.client_secret))
-                .form(&login)
-        };
+        let handler = request.send().await;
 
-        let handler = |response: crate::client::req::Response| async {
-            response
-                .json::<AuthResponse>()
-                .await
-                .map_err(ParseJsonError::Reqwest)
-        };
+        match handler {
+            Ok(response) => {
+                let auth_data = response.json().await?;
 
-        let auth_data = self.execute(&request, &handler).await?;
+                let access_token = match auth_data {
+                    AuthResponse::AuthData { access_token } => access_token,
+                    AuthResponse::ErrorData { error } => {
+                        return Err(ExecuteError::AuthError(error))
+                    }
+                };
 
-        let access_token = match auth_data {
-            AuthResponse::AuthData { access_token } => access_token,
-            AuthResponse::ErrorData { error } => return Err(ExecuteError::AuthError(error)),
-        };
-
-        Ok(access_token)
+                return Ok(access_token);
+            }
+            Err(err) => {
+                panic!("error: {err}");
+            }
+        }
     }
 }

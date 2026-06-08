@@ -10,7 +10,7 @@ license = "MIT"
 name = "roux"
 readme = "README.md"
 repository = "https://github.com/halcyonnouveau/roux"
-version = "2.3.52"
+version = "2.4.0"
 
 [dependencies]
 html-escape = "0.2.13"
