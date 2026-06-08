@@ -276,7 +276,6 @@ impl ClientInner {
     #[maybe_async::maybe_async]
     pub(crate) async fn attempt_login(&self) -> Result<String, ExecuteError> {
         #[derive(Serialize)]
-        #[derive(Debug, Serialize)]
         struct LoginRequest<'a> {
             grant_type: &'a str,
             username: &'a str,
